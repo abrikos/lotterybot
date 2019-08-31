@@ -1,0 +1,82 @@
+$red1: #d15c22
+$deg: 30deg
+.float
+  position: absolute
+  bottom: 40%
+  left: 50%
+  z-index: 100000000
+
+  div
+    position: relative
+    left: -50%
+    @extend .shadow
+
+.map-panel
+  max-width: 90%
+  padding: 10px
+  background-color: whitesmoke
+  @extend .shadow
+  button.close
+    float: right
+    background-color: transparent
+
+.pointer
+  color: blue
+  cursor: pointer
+  text-decoration: underline
+
+.shadow
+  -webkit-box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.75) !important
+  -moz-box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.75) !important
+  box-shadow: 10px 10px 5px 0px rgba(0,0,0,0.75) !important
+
+.contacts
+  a
+    text-decoration: underline
+.long-text
+  text-overflow: fade
+  white-space: nowrap
+  width: 100px
+  display: block
+  background-color: red
+.earth-card
+  min-width: 200px
+.wallet-address
+  @media (max-width : 770px)
+    font-size: .8em!important
+  @media (min-width : 770px)
+    font-size: 1.6em!important
+
+.red
+  color: $red1
+
+.big2
+  font-size: 2em
+  color: $red1
+
+.big5
+  font-size: 5em
+  color: $red1
+
+.green
+  color: #025
+
+.rotated
+  position: absolute
+  color: #f00
+  -webkit-transform: rotate(-30deg)
+  -moz-transform: rotate(30deg)
+  -o-transform: rotate(30deg)
+  -ms-transform: rotate(30deg)
+  transform: rotate(30deg)
+
+.test
+  color: red
+
+
+
+.big-line-spacing
+  li
+    margin: 30px 0
+    a
+      text-decoration: underline
