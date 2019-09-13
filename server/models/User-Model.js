@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-const crypto = require('crypto');
 const findOrCreate = require('mongoose-find-or-create');
 
 
@@ -9,6 +8,7 @@ const modelSchema = new Schema({
         first_name: String,
         username: String,
         wallet: String,
+        language_code: String,
         changeAddress: Boolean
     },
     {

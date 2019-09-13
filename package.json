@@ -146,8 +146,8 @@
   "scripts": {
     "start": "NODE_PATH=. node scripts/start.js",
     "server": "nodemon server/server.js",
-    "cron": "nodemon  -r esm server/cron/cron-start.js --config nodemon-cron.json",
-    "bot": "node  -r esm server/bot/bot.js",
+    "cron": "NODE_PATH=. nodemon  -r esm server/cron/cron-start.js --config nodemon-cron.json",
+    "bot": "NODE_PATH=. node  -r esm server/bot/bot.js",
     "admin": "node scripts/start-admin.js",
     "websocket": "node server/websocket.js",
     "build": "GENERATE_SOURCEMAP=false NODE_PATH=. node scripts/build.js",
@@ -176,6 +176,7 @@
     "@babel/preset-env": "^7.4.5",
     "@babel/register": "^7.4.4",
     "babel-loader": "^8.0.4",
+    "babel-plugin-wildcard": "^5.0.0",
     "cors": "^2.8.5",
     "dotenv": "^6.2.0",
     "helmet": "^3.15.0",

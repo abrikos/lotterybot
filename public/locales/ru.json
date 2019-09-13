@@ -11,5 +11,10 @@
 	"Support": "Поддержка",
 	"Test": "Test",
 	"Lottery ends": "Лотерея завершится",
-	"Current bank": "Текущий банк"
+	"Current bank": "Текущий банк",
+	"Lottery will end upon reaching Bank": "Лотерея завершится при достежении банком",
+	"Enter Your address for payments": "Введите Ваш адрес для выплат",
+	"Address changed": "Адрес изменен",
+	"Your winnings and referral deductions will be sent to": "Ваши выигрыши и реферальные отчисления будут отправляться на",
+	"My address": "Мой адрес"
 }

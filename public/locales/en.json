@@ -1,4 +1,19 @@
 {
-	"intro": "This bot is a daily BIP coin lottery on the Minter network.\nThe higher the bet, the greater the chance."
-
+	"intro": "This bot is a daily BIP coin lottery on the Minter network.\nThe higher the bet, the greater the chance.",
+	"Lottery of the day": "Lottery of the day",
+	"📄 List of the day": "📄 List of the day",
+	"Information": "Information",
+	"To buy ticket please send any amount of BIP to this address": "To buy ticket please send any amount of BIP to this address",
+	"1 BIP = 1 ticket": "1 BIP = 1 ticket",
+	"Lottery ends": "Lottery ends",
+	"Current bank": "Current bank",
+	"Support": "Support",
+	"Lottery will end upon reaching Bank ": "Lottery will end upon reaching Bank ",
+	"👛 Change address": "👛 Change address",
+	"Enter Your address for payments": "Enter Your address for payments",
+	"Address changed": "Address changed",
+	"Wrong address": "Wrong address",
+	"My address": "My address",
+	"Your winnings and referral deductions will be sent to": "Your winnings and referral deductions will be sent to",
+	"Lottery will end upon reaching Bank": "Lottery will end upon reaching Bank"
 }
