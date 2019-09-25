@@ -1,6 +1,7 @@
 const t = require("../../i18n");
 export default {
-    level: 2,
+    level: 0,
+    parent:'cbCabinet',
     drawMenu: true,
     getLabel:()=> t("My address"),
     getMessage: async (user) => {

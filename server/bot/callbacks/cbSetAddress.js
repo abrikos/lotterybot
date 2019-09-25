@@ -1,6 +1,7 @@
 const t = require("../../i18n");
 export default {
     level: 0,
+    parent:'cbCabinet',
     drawMenu: false,
     getLabel: () => t("👛 Change address"),
     getMessage: user => {

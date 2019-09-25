@@ -29,13 +29,14 @@ const bot = new TelegramBot(token, {
 });
 
 
-function getMainMenu(user) {
+function getMenu(user, parent) {
     i18n.setLocale(user.language_code);
     const levels = [...new Set(Object.keys(CallBacks).map(key => CallBacks[key].level))].sort();
     const menu = {};
     for (const level of levels) {
         if (!menu[level]) menu[level] = [];
         for (const callback_data of Object.keys(CallBacks)) {
+            if (CallBacks[callback_data].parent !== parent) continue;
             if (CallBacks[callback_data].level === level) {
                 menu[level].push({
                     "text": CallBacks[callback_data].getLabel(),
@@ -56,22 +57,24 @@ function getMainMenu(user) {
 }
 
 
-
 // Matches "/echo [whatever]"
 bot.onText(/\/start/, (msg, match) => {
     i18n.setLocale(msg.from.language_code);
     mongoose.User.findOrCreate(msg.from, async (error, user) => {
-        const message = await CallBacks.information.getMessage();
+        const message = await CallBacks.cbInformation.getMessage();
+        const keyboard = [];
+        const firstLine = config.languages.map(l => l.title);
+        firstLine.push('🏠');
+        keyboard.push(firstLine)
         const langOptions = {
             reply_markup: {
-                keyboard: [
-                    config.languages.map(l => l.title)
-                ],
+                keyboard,
                 resize_keyboard: true,
             },
         };
+        console.log(langOptions.reply_markup.keyboard)
         await bot.sendMessage(msg.chat.id, 'Hello!', langOptions);
-        await bot.sendMessage(msg.chat.id, message, getMainMenu(user));
+        await bot.sendMessage(msg.chat.id, message, getMenu(user));
     });
 });
 
@@ -101,9 +104,9 @@ bot.on('message', async (msg) => {
             user.changeAddress = false;
             user.save();
 
-            bot.sendMessage(chatId, CallBacks.setAddress.getSuccessMessage(), getMainMenu(user));
+            bot.sendMessage(chatId, CallBacks.cbSetAddress.getSuccessMessage(), getMenu(user));
         } else {
-            bot.sendMessage(chatId, CallBacks.setAddress.getWrongMessage());
+            bot.sendMessage(chatId, CallBacks.cbSetAddress.getWrongMessage());
         }
     } else {
         if (config.languages.map(l => l.title).indexOf(msg.text) > -1) {
@@ -111,7 +114,9 @@ bot.on('message', async (msg) => {
             user.language_code = lang.language_code;
             user.save();
             i18n.setLocale(user.language_code);
-            bot.sendMessage(msg.chat.id, await CallBacks.information.getMessage(), getMainMenu(user));
+            bot.sendMessage(msg.chat.id, await CallBacks.cbInformation.getMessage(), getMenu(user));
+        }else if(msg.text==='🏠'){
+            bot.sendMessage(msg.chat.id, t('Go to start'), getMenu(user));
         }
     }
     // send a message to the chat acknowledging receipt of their message
@@ -123,7 +128,7 @@ bot.on('callback_query', async function (callbackQuery) {
     const msg = callbackQuery.message;
     const user = await mongoose.User.findOne({id: callbackQuery.from.id});
     const message = await CallBacks[action].getMessage(user);
-    //getMainMenu().parse_mode = "Markdown";
-    await bot.sendMessage(msg.chat.id, message, CallBacks[action].drawMenu ? getMainMenu(user) : {});
+    //getMenu().parse_mode = "Markdown";
+    await bot.sendMessage(msg.chat.id, message, CallBacks[action].drawMenu ? getMenu(user, action) : {});
 });
 

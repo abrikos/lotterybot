@@ -1,7 +1,7 @@
 const mongoose = require("../../lib/mongoose");
 const t = require("../../i18n");
 export default {
-    level: 1,
+    level: 0,
     drawMenu: true,
     getLabel: () => t("Information"),
     getMessage: async () => {
