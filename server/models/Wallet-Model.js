@@ -8,9 +8,9 @@ const modelSchema = new Schema({
         seed: {type: String, required: true},
         balance: {type: Number, default: 0},
         amount: {type: Number, default: 0},
-        //date: {type: Number, default: 0},
         closed: {type: Boolean, default: false},
-        fundsMovedTx: String
+        fundsMovedTx: String,
+        user: {type: mongoose.Schema.Types.ObjectId, ref: 'User'},
     },
     {
         timestamps: { createdAt: 'date' },
@@ -32,11 +32,13 @@ modelSchema.methods.close = async function () {
 };
 
 
-modelSchema.statics.createNew = async function () {
+modelSchema.statics.createNew = async function (user) {
     const wallet = new this();
     const wt = generateWallet();
     wallet.seed = wt._mnemonic;
     wallet.address = wt.getAddressString();
+    wallet.date = new Date().valueOf();
+    wallet.user = user;
     await wallet.save();
     return wallet;
 };

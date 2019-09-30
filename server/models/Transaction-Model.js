@@ -14,11 +14,12 @@ const modelSchema = new Schema({
         //to: {type: String, required: true, index: true},
         //symbol: {type: String, required: true},
         message: {type: Object},
-        lotteryWinner: Object,
         ended: {type: Boolean, default: false},
         chainId: {type: Number, required: true},
         date: {type: Number, required: true},
         data: {type: Object, required: true},
+        lottery: {type: mongoose.Schema.Types.ObjectId, ref: 'Lottery', required: [true, 'Lottery required']},
+        wallet: {type: mongoose.Schema.Types.ObjectId, ref: 'Wallet'},
     },
     {
         toObject: {virtuals: true},
@@ -30,7 +31,7 @@ const modelSchema = new Schema({
 modelSchema.statics.bank = async function () {
     const txs = await this.find({ended: false});
     let sum = 0;
-    for(const tx of txs){
+    for (const tx of txs) {
         sum += tx.value;
     }
     return sum * config.lotteryPercent;

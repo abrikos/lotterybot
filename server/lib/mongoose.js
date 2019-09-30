@@ -16,8 +16,8 @@ module.exports = {
         return cookie.indexOf(model.cookieId) !== -1;
     },
     User: require('../models/User-Model'),
-    EmailConfirm: require('../models/EmailConfirm-Model'),
     Wallet: require('../models/Wallet-Model'),
     Transaction: require('../models/Transaction-Model'),
-    Referral: require('../models/Referal-Model'),
+    Lottery: require('../models/Lottery-Model'),
+
 };

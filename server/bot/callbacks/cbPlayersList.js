@@ -3,7 +3,7 @@ const t = require("../../i18n");
 export default {
     level: 0,
     drawMenu: true,
-    getLabel: () => t("\uD83D\uDCC4 List of the day"),
+    getLabel: () => t("\uD83D\uDCC4 List of tickets"),
     getMessage: async () => {
         const sum = await mongoose.Transaction.bank();
         const txs = await mongoose.Transaction.find({ended: false});

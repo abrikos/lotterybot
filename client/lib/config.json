@@ -1,7 +1,9 @@
 {
   "appName": "Minter Lottery Bot",
-  "appUrl": "http://minter-earth.pro",
+  "appUrl": "http://minter-lottery.com",
   "lotteryPercent": 0.98,
+  "lotteryStopSum": 1000,
+  "referralPercent": 0.3,
   "websocket":{"host": "ws.minter-bet.ru","port": 8080},
   "consoleUrl": "https://console.minter-bet.ru",
   "mainNet": {

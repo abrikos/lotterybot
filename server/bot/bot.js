@@ -58,25 +58,14 @@ function getMenu(user, parent) {
 
 
 // Matches "/echo [whatever]"
-bot.onText(/\/start/, (msg, match) => {
+/*
+bot.onText(/\/start/, async (msg, match) => {
     i18n.setLocale(msg.from.language_code);
-    mongoose.User.findOrCreate(msg.from, async (error, user) => {
-        const message = await CallBacks.cbInformation.getMessage();
-        const keyboard = [];
-        const firstLine = config.languages.map(l => l.title);
-        firstLine.push('🏠');
-        keyboard.push(firstLine)
-        const langOptions = {
-            reply_markup: {
-                keyboard,
-                resize_keyboard: true,
-            },
-        };
-        console.log(langOptions.reply_markup.keyboard)
-        await bot.sendMessage(msg.chat.id, 'Hello!', langOptions);
-        await bot.sendMessage(msg.chat.id, message, getMenu(user));
-    });
+    const user = await mongoose.User.getUser(msg.from);
+
+
 });
+*/
 
 /*
 bot.onText(/\/echo (.+)/, (msg, match) => {
@@ -96,7 +85,7 @@ bot.onText(/\/echo (.+)/, (msg, match) => {
 // messages.
 
 bot.on('message', async (msg) => {
-    const user = await mongoose.User.findOne({id: msg.from.id});
+    const user = await mongoose.User.getUser(msg.from);
     const chatId = msg.chat.id;
     if (user.changeAddress) {
         if (msg.text.match(walletAddressRegexp)) {
@@ -114,9 +103,23 @@ bot.on('message', async (msg) => {
             user.language_code = lang.language_code;
             user.save();
             i18n.setLocale(user.language_code);
-            bot.sendMessage(msg.chat.id, await CallBacks.cbInformation.getMessage(), getMenu(user));
-        }else if(msg.text==='🏠'){
+            bot.sendMessage(msg.chat.id, await CallBacks.cbInformation.getMessage(user), getMenu(user));
+        } else if (msg.text === '🏠') {
             bot.sendMessage(msg.chat.id, t('Go to start'), getMenu(user));
+        } else if(msg.text === '/start'){
+            const message = await CallBacks.cbInformation.getMessage(user);
+            const keyboard = [];
+            const firstLine = config.languages.map(l => l.title);
+            firstLine.push('🏠');
+            keyboard.push(firstLine)
+            const langOptions = {
+                reply_markup: {
+                    keyboard,
+                    resize_keyboard: true,
+                },
+            };
+            await bot.sendMessage(msg.chat.id, 'Hello!', langOptions);
+            await bot.sendMessage(msg.chat.id, message, getMenu(user));
         }
     }
     // send a message to the chat acknowledging receipt of their message
@@ -126,7 +129,7 @@ bot.on('message', async (msg) => {
 bot.on('callback_query', async function (callbackQuery) {
     const action = callbackQuery.data;
     const msg = callbackQuery.message;
-    const user = await mongoose.User.findOne({id: callbackQuery.from.id});
+    const user = await mongoose.User.getUser(callbackQuery.from);
     const message = await CallBacks[action].getMessage(user);
     //getMenu().parse_mode = "Markdown";
     await bot.sendMessage(msg.chat.id, message, CallBacks[action].drawMenu ? getMenu(user, action) : {});
