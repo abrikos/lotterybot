@@ -1,0 +1,4 @@
+{
+  "watch": ["server/lib", "server/models", "server/bot"],
+  "ext": "js, css"
+}
