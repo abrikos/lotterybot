@@ -17,5 +17,16 @@
 	"Your winnings and referral deductions will be sent to": "Your winnings and referral deductions will be sent to",
 	"Lottery will end upon reaching Bank": "Lottery will end upon reaching Bank",
 	"Cabinet": "Cabinet",
-	"📄 List of tickets": "📄 List of tickets"
+	"📄 List of tickets": "📄 List of tickets",
+	"Go to start": "Go to start",
+	"Lottery starts": "Lottery starts",
+	"Your tickets": "Your tickets",
+	"Your have {%s} tickets": "Your have {%s} tickets",
+	"Your have tickets": "Your have tickets",
+	"The lottery will end when the number of tickets sold reaches": "The lottery will end when the number of tickets sold reaches",
+	"Currently sold tickets": "Currently sold tickets",
+	"My referral link": "My referral link",
+	"Your referral link": "Your referral link",
+	"Please input your wallet address for referral payments": "Please input your wallet address for referral payments",
+	"Current address": "Current address"
 }

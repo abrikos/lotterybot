@@ -58,14 +58,19 @@ function getMenu(user, parent) {
 
 
 // Matches "/echo [whatever]"
-/*
-bot.onText(/\/start/, async (msg, match) => {
-    i18n.setLocale(msg.from.language_code);
+
+bot.onText(/\/start (.+)/, async (msg, match) => {
+    if (mongoose.Types.ObjectId.isValid(match[1])) {
+        const parent = await mongoose.User.findById(match[1]);
+        if (parent) {
+            msg.from.parent = parent;
+        }
+    }
     const user = await mongoose.User.getUser(msg.from);
-
-
+    i18n.setLocale(user.language_code);
+    await bot.sendMessage(msg.chat.id, t('Please input your wallet address for referral payments'));
 });
-*/
+
 
 /*
 bot.onText(/\/echo (.+)/, (msg, match) => {
@@ -87,26 +92,11 @@ bot.onText(/\/echo (.+)/, (msg, match) => {
 bot.on('message', async (msg) => {
     const user = await mongoose.User.getUser(msg.from);
     const chatId = msg.chat.id;
-    if (user.changeAddress) {
+    if (!user.paymentAddress || user.changeAddress) {
         if (msg.text.match(walletAddressRegexp)) {
-            user.wallet = msg.text;
-            user.changeAddress = false;
+            user.paymentAddress = msg.text;
             user.save();
-
-            bot.sendMessage(chatId, CallBacks.cbSetAddress.getSuccessMessage(), getMenu(user));
-        } else {
-            bot.sendMessage(chatId, CallBacks.cbSetAddress.getWrongMessage());
-        }
-    } else {
-        if (config.languages.map(l => l.title).indexOf(msg.text) > -1) {
-            const lang = config.languages.find(l => l.title === msg.text);
-            user.language_code = lang.language_code;
-            user.save();
-            i18n.setLocale(user.language_code);
-            bot.sendMessage(msg.chat.id, await CallBacks.cbInformation.getMessage(user), getMenu(user));
-        } else if (msg.text === '🏠') {
-            bot.sendMessage(msg.chat.id, t('Go to start'), getMenu(user));
-        } else if(msg.text === '/start'){
+            bot.sendMessage(chatId, CallBacks.cbSetAddress.getSuccessMessage());
             const message = await CallBacks.cbInformation.getMessage(user);
             const keyboard = [];
             const firstLine = config.languages.map(l => l.title);
@@ -118,8 +108,22 @@ bot.on('message', async (msg) => {
                     resize_keyboard: true,
                 },
             };
-            await bot.sendMessage(msg.chat.id, 'Hello!', langOptions);
             await bot.sendMessage(msg.chat.id, message, getMenu(user));
+        } else {
+            await bot.sendMessage(chatId, CallBacks.cbSetAddress.getWrongMessage());
+            if (user.paymentAddress) await bot.sendMessage(chatId, t('Current address') + `\n*${user.paymentAddress}*`, {parse_mode: "Markdown"});
+            await bot.sendMessage(msg.chat.id, t('Please input your wallet address for referral payments'));
+        }
+
+    } else {
+        if (config.languages.map(l => l.title).indexOf(msg.text) > -1) {
+            const lang = config.languages.find(l => l.title === msg.text);
+            user.language_code = lang.language_code;
+            user.save();
+            i18n.setLocale(user.language_code);
+            bot.sendMessage(msg.chat.id, await CallBacks.cbInformation.getMessage(user), getMenu(user));
+        } else if (msg.text === '🏠') {
+            bot.sendMessage(msg.chat.id, t('Go to start'), getMenu(user));
         }
     }
     // send a message to the chat acknowledging receipt of their message

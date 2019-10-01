@@ -73,7 +73,7 @@ export default {
         } else if (tx.type === 1) {
             toMain = tx.data.to === mainAddr;
             if (wallet.address === tx.data.to) {
-                wallet.amount += tx.data.value * 1;
+                wallet.amount += tx.value;
             }
         } else {
             return logger.error('WRONG TX.type', tx);

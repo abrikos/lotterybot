@@ -2,7 +2,9 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const findOrCreate = require('mongoose-find-or-create');
 const Wallet = require('./Wallet-Model');
+const Lottery = require('./Lottery-Model');
 const logger = require("logat");
+const config = require("../../client/lib/config");
 
 const modelSchema = new Schema({
         id: {type: Number, unique: true},
@@ -25,7 +27,7 @@ modelSchema.plugin(findOrCreate);
 modelSchema.statics.getUser = async function (from) {
     const populate = [{path: 'wallets', options: {sort: {'date': -1}}}];
     let user = await this.findOne({id: from.id})
-        //.populate(populate);
+    //.populate(populate);
     if (!user) {
         user = new this(from);
         await user.save();
@@ -36,9 +38,27 @@ modelSchema.statics.getUser = async function (from) {
     return user;
 };
 
+modelSchema.methods.ticketsCount = async function () {
+    const user = this;
+    const lottery = await Lottery.getCurrent();
+
+    const transactions = lottery.transactions.filter(t => { return  t.wallet.user.toString() === user._id.toString()});
+
+    let sum = 0;
+    for(const t of transactions){
+        sum += t.value;
+    }
+    return Math.ceil(sum);
+};
+
 modelSchema.virtual('wallet')
     .get(function () {
         return this.wallets[0];
+    });
+
+modelSchema.virtual('referralLink')
+    .get(function () {
+        return `https://telegram.me/${config.botName}?start=${this._id}`;
     });
 
 modelSchema.virtual('referrals', {

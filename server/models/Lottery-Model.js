@@ -1,11 +1,13 @@
+import MinterWallet from "server/lib/MinterWallet";
+
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const config = require("../../client/lib/config");
 const Wallet = require('./Wallet-Model');
+const logger = require('logat');
 
 const modelSchema = new Schema({
         stopLimit: {type: Number, default: 1000},
-        balance: {type: Number, default: 0},
         finishTime: {type: Number, default: 0},
         startTime: {type: Number, default: 0},
         paymentTx: String,
@@ -20,10 +22,47 @@ const modelSchema = new Schema({
         toJSON: {virtuals: true}
     });
 
+modelSchema.methods.finish = async function () {
+    if (this.finishTime) return;
+    if (this.wallet.balance < config.lotteryStopSum / config.lotteryPercent) return;
+    const players = [];
+    for (const tx of this.transactions) {
+        for (let i = 0; i < Math.ceil(tx.value); i++) {
+            players.push(tx);
+        }
+    }
+    const winner = players[Math.floor(Math.random() * players.length)];
+
+    const list = [
+        {to: winner.from, value: config.lotteryStopSum},
+        {to: process.env.ADDRESS, value: this.wallet.balance - config.lotteryStopSum},
+    ];
+    const commission = await MinterWallet.multiSendCommission(list, this.wallet.seed, config.appName+'. Lottery winner');
+    list[0].value += commission / 2 ;
+    list[1].value -= commission ;
+    const paymentTx = await MinterWallet.multiSendTx(list, this.wallet.seed, config.appName+'. Lottery winner');
+    if (paymentTx.error) {
+        return logger.error("Can't send to winner", this.wallet.address, list, paymentTx);
+    }
+    this.finishTime = new Date().valueOf();
+    this.winner = winner;
+    this.paymentTx = paymentTx.hash;
+    await this.save();
+    await this.wallet.close();
+};
+
 modelSchema.statics.getBank = async function () {
     const lottery = await this.getCurrent();
     return lottery.balance;
 };
+
+modelSchema.methods.ticketsCount = async function () {
+    let sum = 0;
+    for(const t of this.transactions){
+        sum+=t.value;
+    }
+    return sum;
+}
 
 modelSchema.statics.getCurrent = async function () {
     let lottery = await this.findOne({finishTime: 0})

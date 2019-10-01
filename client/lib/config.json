@@ -1,5 +1,6 @@
 {
   "appName": "Minter Lottery Bot",
+  "botName": "bip_lottery_bot",
   "appUrl": "http://minter-lottery.com",
   "lotteryPercent": 0.98,
   "lotteryStopSum": 1000,

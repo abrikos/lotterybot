@@ -19,5 +19,16 @@
 	"My address": "Мой адрес",
 	"Cabinet": "Кабинет",
 	"Wrong address": "Не верный адрес",
-	"Go to start": "К началу"
+	"Go to start": "К началу",
+	"📄 List of tickets": "📄 List of tickets",
+	"Lottery starts": "Lottery starts",
+	"Your tickets": "Your tickets",
+	"Your have %s tickets": "Your have %s tickets",
+	"The lottery will end when the number of tickets sold reaches": "The lottery will end when the number of tickets sold reaches",
+	"Currently sold tickets": "Currently sold tickets",
+	"Your have tickets": "Your have tickets",
+	"My referral link": "My referral link",
+	"My current referral address": "My current referral address",
+	"Your referral deductions will be sent to": "Your referral deductions will be sent to",
+	"Your referral link": "Your referral link"
 }

@@ -18,6 +18,7 @@ const modelSchema = new Schema({
         chainId: {type: Number, required: true},
         date: {type: Number, required: true},
         data: {type: Object, required: true},
+        value: {type: Number, default: 0},
         lottery: {type: mongoose.Schema.Types.ObjectId, ref: 'Lottery', required: [true, 'Lottery required']},
         wallet: {type: mongoose.Schema.Types.ObjectId, ref: 'Wallet'},
     },
@@ -49,6 +50,7 @@ modelSchema.statics.createNew = function (tx) {
 
 };
 
+/*
 modelSchema.virtual('value')
     .get(function () {
         let amount = 0;
@@ -61,6 +63,7 @@ modelSchema.virtual('value')
         }
         return amount;
     });
+*/
 
 
 module.exports = mongoose.model("Transaction", modelSchema);

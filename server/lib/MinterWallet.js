@@ -41,14 +41,20 @@ const to = require('./to');
 }*/
 
 export default {
-    multiSendTx: async function (list, mnemonic, message) {
+    multiSendCommission: async function (list, mnemonic, message) {
+        const txSigned = await this.getTxSigned(this.multiSendTxList(list), mnemonic, message);
+        return await minterSDK.estimateTxCommission({transaction: txSigned.serialize().toString('hex')}) / 1000000000000000000;
+    },
+
+    multiSendTxList: function (list) {
         for (const l of list) {
             l.coin = NET.symbol;
         }
-        const txProto = {
-            list,
-        };
-        return await this.postTx(txProto, mnemonic, message);
+        return {list};
+    },
+
+    multiSendTx: async function (list, mnemonic, message) {
+        return await this.postTx(this.multiSendTxList(list), mnemonic, message);
     },
 
     send: async function (address, mnemonic, amount, message) {
@@ -60,7 +66,7 @@ export default {
         return await this.postTx(txProto, mnemonic, message);
     },
 
-    postTx: async function (txProto, mnemonic, message) {
+    getTxSigned: async function (txProto, mnemonic, message) {
         const wallet = minterWallet.walletFromMnemonic(mnemonic);
         const [error, nonce] = await to(minterSDK.getNonce(wallet.getAddressString()));
         txProto.nonce = nonce;
@@ -76,7 +82,12 @@ export default {
         }
         const isMultisend = !!txProto.list;
         const txParams = isMultisend ? new MultisendTxParams(txProto) : new SendTxParams(txProto);
-        const txSigned = prepareSignedTx(txParams);
+        return prepareSignedTx(txParams);
+    },
+
+    postTx: async function (txProto, mnemonic, message) {
+        const isMultisend = !!txProto.list;
+        const txSigned = await this.getTxSigned(txProto, mnemonic, message);
         //logger.info(txProto.list)
         try {
             const commission = await minterSDK.estimateTxCommission({transaction: txSigned.serialize().toString('hex')}) / 1000000000000000000;
@@ -92,6 +103,7 @@ export default {
             return {hash}
 
         } catch (error) {
+            //console.log(error)
             if (!error.response) {
                 return {error};
             }
@@ -145,7 +157,14 @@ export default {
             tx.message = {message};
         }
         tx.date = moment(tx.timestamp);
-        if ([1, 13].indexOf(tx.type) === -1) {
+        if (tx.type !== 1) tx.error = 'WRONG TX TYPE';
+        tx.value = tx.data.value * 1;
+        if (tx.data.coin !== NET.symbol) {
+            tx.error = 'WRONG COIN';
+        }
+
+
+        /*if ([1, 13].indexOf(tx.type) === -1) {
             tx.error = 'WRONG TX TYPE';
         } else if (tx.data.list) {
             const list = tx.data.list.filter(l => l.coin === NET.symbol)
@@ -155,7 +174,7 @@ export default {
             tx.data.list = list;
         } else if (tx.data.coin !== NET.symbol) {
             tx.error = 'WRONG COIN';
-        }
+        }*/
         return tx;
     },
 
