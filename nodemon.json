@@ -1,4 +1,4 @@
 {
-  "watch": ["server.js", "app.js", "server/lib", "server/controllers", "server/models"],
+  "watch": ["server.js", "app.js", "server/lib", "server/controllers", "server/models", "server/bot"],
   "ext": "js, css"
 }

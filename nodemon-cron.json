@@ -1,4 +1,4 @@
 {
-  "watch": ["server/cron", "server/lib", "server/models"],
-  "ext": "js"
+  "watch": ["server/lib", "server/models", "server/bot"],
+  "ext": "js, css"
 }
