@@ -5,6 +5,7 @@ const Schema = mongoose.Schema;
 const config = require("../../client/lib/config");
 const Wallet = require('./Wallet-Model');
 const logger = require('logat');
+const shortUrl = require('shorturl');
 
 const modelSchema = new Schema({
         stopLimit: {type: Number, default: 1000},
@@ -37,10 +38,10 @@ modelSchema.methods.finish = async function () {
         {to: winner.from, value: config.lotteryStopSum},
         {to: process.env.ADDRESS, value: this.wallet.balance - config.lotteryStopSum},
     ];
-    const commission = await MinterWallet.multiSendCommission(list, this.wallet.seed, config.appName+'. Lottery winner');
-    list[0].value += commission / 2 ;
-    list[1].value -= commission ;
-    const paymentTx = await MinterWallet.multiSendTx(list, this.wallet.seed, config.appName+'. Lottery winner');
+    const commission = await MinterWallet.multiSendCommission(list, this.wallet.seed, config.appName + '. Lottery winner');
+    list[0].value += commission / 2;
+    list[1].value -= commission;
+    const paymentTx = await MinterWallet.multiSendTx(list, this.wallet.seed, config.appName + '. Lottery winner');
     if (paymentTx.error) {
         return logger.error("Can't send to winner", this.wallet.address, list, paymentTx);
     }
@@ -58,11 +59,21 @@ modelSchema.statics.getBank = async function () {
 
 modelSchema.methods.ticketsCount = async function () {
     let sum = 0;
-    for(const t of this.transactions){
-        sum+=t.value;
+    for (const t of this.transactions) {
+        sum += t.value;
     }
     return sum;
 }
+
+modelSchema.statics.getAll = async function () {
+    try {
+        return await this.find()
+            .sort([['startTime', -1]])
+            .populate([{path: 'transactions'}, {path:'wallet'}])
+    } catch (e) {
+        logger.error(e)
+    }
+};
 
 modelSchema.statics.getCurrent = async function () {
     let lottery = await this.findOne({finishTime: 0})
@@ -90,6 +101,14 @@ modelSchema.virtual('wallets')
     .get(function () {
         return this.transactions.map(tx => tx.wallet)
     });
+
+modelSchema.methods.getLotteryLink = async function () {
+        return ( MinterWallet.getNetworkConfig().explorerUrl + '/address/' + this.wallet.address);
+    };
+
+modelSchema.methods.getWinnerLink = async function () {
+        return ( MinterWallet.getNetworkConfig().explorerUrl + '/transactions/' + this.paymentTx);
+    };
 
 modelSchema.virtual('sum')
     .get(function () {

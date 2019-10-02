@@ -15,7 +15,7 @@ export default {
             + '\n' + `*${user.wallet.address}*`
             + '\n' + t('1 BIP = 1 ticket')
             + '\n'
-            + '\n' + t('Lottery starts') + `: *${moment(lottery.startTime)}*`
+            + '\n' + t('Lottery starts') + `: *${moment(lottery.startTime).format('YYYY-MM-DD HH:mm')}*`
             + '\n' + t('The lottery will end when the number of tickets sold reaches') + `: *${Math.ceil(config.lotteryStopSum / config.lotteryPercent)}*`
             + '\n' + t('Currently sold tickets') + `: *${lotteryTickets}*`
             + '\n' + t('Your have tickets') + `:* ${tickets}*`

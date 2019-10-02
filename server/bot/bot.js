@@ -58,57 +58,51 @@ function getMenu(user, parent) {
 
 
 // Matches "/echo [whatever]"
-
-bot.onText(/\/start (.+)/, async (msg, match) => {
-    if (mongoose.Types.ObjectId.isValid(match[1])) {
-        const parent = await mongoose.User.findById(match[1]);
-        if (parent) {
-            msg.from.parent = parent;
-        }
-    }
-    const user = await mongoose.User.getUser(msg.from);
-    i18n.setLocale(user.language_code);
-    await bot.sendMessage(msg.chat.id, t('Please input your wallet address for referral payments'));
-});
-
-
 /*
-bot.onText(/\/echo (.+)/, (msg, match) => {
-    // 'msg' is the received Message from Telegram
-    // 'match' is the result of executing the regexp above on the text content
-    // of the message
+bot.onText(/\/start (.+)/, async (msg, match) => {
 
-    const chatId = msg.chat.id;
-    const resp = match[1]; // the captured "whatever"
-
-    // send back the matched "whatever" to the chat
-    bot.sendMessage(chatId, resp);
 });
 */
 
-// Listen for any kind of message. There are different kinds of
-// messages.
+async function firstMessage(msg, user) {
+    const message = await CallBacks.cbInformation.getMessage(user);
+    const keyboard = [];
+    const firstLine = config.languages.map(l => l.title);
+    firstLine.push('🏠');
+    keyboard.push(firstLine)
+    const langOptions = {
+        reply_markup: {
+            keyboard,
+            resize_keyboard: true,
+        },
+    };
+    await bot.sendMessage(msg.chat.id, t('Hello!'), langOptions);
+    await bot.sendMessage(msg.chat.id, message, getMenu(user));
+}
+
 
 bot.on('message', async (msg) => {
     const user = await mongoose.User.getUser(msg.from);
     const chatId = msg.chat.id;
-    if (!user.paymentAddress || user.changeAddress) {
+    const start = msg.text.match(/\/start (.+)/);
+    if (start) {
+        if (mongoose.Types.ObjectId.isValid(start[1]) && !user.parent) {
+            user.parent = await mongoose.User.findById(start[1]);
+            await user.save();
+        }
+        i18n.setLocale(user.language_code);
+        if (!user.paymentAddress) {
+            await bot.sendMessage(msg.chat.id, t('Please input your wallet address for referral payments'));
+        } else {
+            await firstMessage(msg, user)
+        }
+    } else if (!user.paymentAddress || user.changeAddress) {
         if (msg.text.match(walletAddressRegexp)) {
             user.paymentAddress = msg.text;
+            user.changeAddress = false;
             user.save();
-            bot.sendMessage(chatId, CallBacks.cbSetAddress.getSuccessMessage());
-            const message = await CallBacks.cbInformation.getMessage(user);
-            const keyboard = [];
-            const firstLine = config.languages.map(l => l.title);
-            firstLine.push('🏠');
-            keyboard.push(firstLine)
-            const langOptions = {
-                reply_markup: {
-                    keyboard,
-                    resize_keyboard: true,
-                },
-            };
-            await bot.sendMessage(msg.chat.id, message, getMenu(user));
+            await bot.sendMessage(chatId, CallBacks.cbSetAddress.getSuccessMessage());
+            await firstMessage(msg, user);
         } else {
             await bot.sendMessage(chatId, CallBacks.cbSetAddress.getWrongMessage());
             if (user.paymentAddress) await bot.sendMessage(chatId, t('Current address') + `\n*${user.paymentAddress}*`, {parse_mode: "Markdown"});
@@ -123,7 +117,9 @@ bot.on('message', async (msg) => {
             i18n.setLocale(user.language_code);
             bot.sendMessage(msg.chat.id, await CallBacks.cbInformation.getMessage(user), getMenu(user));
         } else if (msg.text === '🏠') {
-            bot.sendMessage(msg.chat.id, t('Go to start'), getMenu(user));
+            bot.sendMessage(msg.chat.id, t('Main menu'), getMenu(user));
+        } else {
+            bot.sendMessage(msg.chat.id, await CallBacks.cbInformation.getMessage(user), getMenu(user));
         }
     }
     // send a message to the chat acknowledging receipt of their message

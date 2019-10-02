@@ -4,6 +4,7 @@ export default {
     drawMenu: true,
     getLabel:()=> t("Cabinet"),
     getMessage: async (user) => {
-        return t('Cabinet');
+        return t('Cabinet')
+            + '\n' + t('Referrals count') + `: ${user.referrals.length}`;
     }
 }

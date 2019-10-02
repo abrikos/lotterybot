@@ -25,7 +25,7 @@ const modelSchema = new Schema({
 modelSchema.plugin(findOrCreate);
 
 modelSchema.statics.getUser = async function (from) {
-    const populate = [{path: 'wallets', options: {sort: {'date': -1}}}];
+    const populate = [{path: 'wallets', options: {sort: {'date': -1}}}, {path:'referrals'}];
     let user = await this.findOne({id: from.id})
     //.populate(populate);
     if (!user) {
@@ -37,6 +37,7 @@ modelSchema.statics.getUser = async function (from) {
     user = await user.populate(populate).execPopulate();
     return user;
 };
+
 
 modelSchema.methods.ticketsCount = async function () {
     const user = this;
@@ -64,7 +65,7 @@ modelSchema.virtual('referralLink')
 modelSchema.virtual('referrals', {
     ref: 'User',
     localField: '_id',
-    foreignField: 'referral',
+    foreignField: 'parent',
     justOne: false // set true for one-to-one relationship
 });
 

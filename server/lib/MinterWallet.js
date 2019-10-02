@@ -209,6 +209,9 @@ export default {
             return {error: e.response.status, url: `${NET.explorerApiUrl}${action}`}
         }
     },
+    getNetworkConfig: function(){
+        return NET;
+    },
 
     checkAddress: function (address) {
         return address.match(/^Mx[a-fA-F0-9]{40}$/)
