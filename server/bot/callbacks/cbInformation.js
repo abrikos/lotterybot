@@ -16,9 +16,12 @@ export default {
             + '\n' + t('1 BIP = 1 ticket')
             + '\n'
             + '\n' + t('Lottery starts') + `: *${moment(lottery.startTime).format('YYYY-MM-DD HH:mm')}*`
-            + '\n' + t('The lottery will end when the number of tickets sold reaches') + `: *${Math.ceil(config.lotteryStopSum / config.lotteryPercent)}*`
-            + '\n' + t('Currently sold tickets') + `: *${lotteryTickets}*`
+
+            + '\n' + t('The lottery will end when the balance of it wallet reaches') + `: *${Math.ceil(config.lotteryStopSum / config.lotteryPercent)}* BIP`
+            + '\n' + t('Current lottery balance') + `: *${lottery.wallet.balance.toFixed(2)}* BIP`
+            + '\n' + t('Lottery wallet') + `: *${await lottery.getLotteryLink()}*`
             + '\n' + t('Your have tickets') + `:* ${tickets}*`
+            + '\n' + t('Total tickets') + `:* ${lotteryTickets}*`
 
             + '\n---------------'
             + '\n' + t('Support') + ': @abrikostrator'

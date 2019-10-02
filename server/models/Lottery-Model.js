@@ -25,7 +25,8 @@ const modelSchema = new Schema({
 
 modelSchema.methods.finish = async function () {
     if (this.finishTime) return;
-    if (this.wallet.balance < config.lotteryStopSum / config.lotteryPercent) return;
+
+    if (this.wallet.balance < Math.ceil(config.lotteryStopSum / config.lotteryPercent)) return;
     const players = [];
     for (const tx of this.transactions) {
         for (let i = 0; i < Math.ceil(tx.value); i++) {
@@ -68,7 +69,7 @@ modelSchema.methods.ticketsCount = async function () {
 modelSchema.statics.getAll = async function () {
     try {
         return await this.find()
-            .sort([['startTime', -1]])
+            .sort([['startTime', 1]])
             .populate([{path: 'transactions'}, {path:'wallet'}])
     } catch (e) {
         logger.error(e)

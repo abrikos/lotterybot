@@ -1,5 +1,5 @@
 {
-	"intro": "This bot is a daily BIP coin lottery on the Minter network.\nThe higher the bet, the greater the chance.",
+	"intro": "This bot is a daily BIP coin lottery on the Minter network.\nHigher bid - higher chance.",
 	"Lottery of the day": "Lottery of the day",
 	"📄 List of the day": "📄 List of the day",
 	"Information": "Information",
@@ -35,5 +35,8 @@
 	"Tickets count": "Tickets count",
 	"List of lotteries": "List of lotteries",
 	"Current": "Current",
-	"Your referral deductions will be sent to": "Your referral deductions will be sent to"
+	"Your referral deductions will be sent to": "Your referral deductions will be sent to",
+	"Current lottery balance": "Current lottery balance",
+	"Lottery wallet": "Lottery wallet",
+	"Total tickets": "Total tickets"
 }
