@@ -1,5 +1,5 @@
-const mongoose = require("../../lib/mongoose");
-const t = require("../../i18n");
+const mongoose = require("server/lib/mongoose");
+const t = require("server/i18n");
 export default {
     level: 0,
     drawMenu: true,

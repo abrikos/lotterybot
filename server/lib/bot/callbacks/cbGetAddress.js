@@ -1,4 +1,4 @@
-const t = require("../../i18n");
+const t = require("server/i18n");
 export default {
     level: 0,
     parent:'cbCabinet',

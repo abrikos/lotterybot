@@ -1,8 +1,10 @@
 import MinterWallet from "server/lib/MinterWallet";
+import moment from "moment";
 
+const t = require("server/i18n");
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-const config = require("../../client/lib/config");
+const config = require("client/lib/config");
 const Wallet = require('./Wallet-Model');
 const logger = require('logat');
 const shortUrl = require('shorturl');
@@ -16,7 +18,7 @@ const modelSchema = new Schema({
         winner: {type: mongoose.Schema.Types.ObjectId, ref: 'Transaction'},
     },
     {
-        timestamps: {createdAt: 'date'},
+        timestamps: {createdAt: 'createdAt'},
         toObject: {virtuals: true},
         // use if your results might be retrieved as JSON
         // see http://stackoverflow.com/q/13133911/488666
@@ -25,8 +27,8 @@ const modelSchema = new Schema({
 
 modelSchema.methods.finish = async function () {
     if (this.finishTime) return;
-
     if (this.wallet.balance < Math.ceil(config.lotteryStopSum / config.lotteryPercent)) return;
+
     const players = [];
     for (const tx of this.transactions) {
         for (let i = 0; i < Math.ceil(tx.value); i++) {
@@ -51,6 +53,7 @@ modelSchema.methods.finish = async function () {
     this.paymentTx = paymentTx.hash;
     await this.save();
     await this.wallet.close();
+    return paymentTx;
 };
 
 modelSchema.statics.getBank = async function () {
@@ -70,7 +73,7 @@ modelSchema.statics.getAll = async function () {
     try {
         return await this.find()
             .sort([['startTime', 1]])
-            .populate([{path: 'transactions'}, {path:'wallet'}])
+            .populate([{path: 'transactions'}, {path: 'wallet'}])
     } catch (e) {
         logger.error(e)
     }
@@ -103,13 +106,35 @@ modelSchema.virtual('wallets')
         return this.transactions.map(tx => tx.wallet)
     });
 
-modelSchema.methods.getLotteryLink = async function () {
-        return ( MinterWallet.getNetworkConfig().explorerUrl + '/address/' + this.wallet.address);
-    };
+modelSchema.virtual('date')
+    .get(function () {
+        return moment(this.createdAt).format('YYYY-MM-DD HH:mm')
+    });
 
-modelSchema.methods.getWinnerLink = async function () {
-        return ( MinterWallet.getNetworkConfig().explorerUrl + '/transactions/' + this.paymentTx);
-    };
+modelSchema.virtual('startDate')
+    .get(function () {
+        return moment(this.startTime).format('YYYY-MM-DD HH:mm')
+    });
+
+
+modelSchema.methods.getLotteryLink = function () {
+    return (MinterWallet.getNetworkConfig().explorerUrl + '/address/' + this.wallet.address);
+};
+
+modelSchema.methods.getWinnerLink = function () {
+    return (MinterWallet.getNetworkConfig().explorerUrl + '/transactions/' + this.paymentTx);
+};
+
+modelSchema.methods.getInfo = async function () {
+    const lotteryTickets = await this.ticketsCount();
+    return t('intro')
+        + '\n' + t('Referral program') + `: *${config.referralPercent*100}%*`
+        + '\n' + t('Lottery starts') + `: *${this.startDate}*`
+        + '\n' + t('The lottery will end when the balance of it wallet reaches') + `: *${Math.ceil(config.lotteryStopSum / config.lotteryPercent)}* BIP`
+        + '\n' + t('Current lottery balance') + `: *${this.wallet.balance.toFixed(2)}* BIP`
+        + '\n' + t('Lottery wallet') + `: *${this.getLotteryLink()}*`
+    //+ '\n' + t('Total tickets') + `:* ${lotteryTickets}*`
+};
 
 modelSchema.virtual('sum')
     .get(function () {

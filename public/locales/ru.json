@@ -19,5 +19,20 @@
 	"My address": "Мой адрес",
 	"Cabinet": "Кабинет",
 	"Wrong address": "Не верный адрес",
-	"Go to start": "К началу"
+	"Go to start": "К началу",
+	"List of lotteries": "List of lotteries",
+	"Lottery starts": "Lottery starts",
+	"The lottery will end when the balance of it wallet reaches": "The lottery will end when the balance of it wallet reaches",
+	"Current lottery balance": "Current lottery balance",
+	"Lottery wallet": "Lottery wallet",
+	"Your have tickets": "Your have tickets",
+	"Total tickets": "Total tickets",
+	"Referrals count": "Referrals count",
+	"My current referral address": "My current referral address",
+	"Change referral address": "Change referral address",
+	"My referral link": "My referral link",
+	"To buy tickets please send BIP`s to": "To buy tickets please send BIP`s to",
+	"To buy tickets please send any amount of  BIP to": "To buy tickets please send any amount of  BIP to",
+	"Your referral link": "Your referral link",
+	"Your referral deductions will be sent to": "Your referral deductions will be sent to"
 }

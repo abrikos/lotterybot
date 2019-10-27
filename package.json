@@ -148,8 +148,7 @@
   "scripts": {
     "start": "NODE_PATH=. node scripts/start.js",
     "server": "nodemon server/server.js",
-    "cron": "NODE_PATH=. nodemon  -r esm server/cron/cron-start.js --config nodemon-cron.json",
-    "bot": "NODE_PATH=. nodemon  -r esm server/bot/bot.js --config nodemon-bot.json",
+    "bot": "NODE_PATH=. nodemon  -r esm server/bot.js --config nodemon-bot.json",
     "admin": "node scripts/start-admin.js",
     "websocket": "node server/websocket.js",
     "build": "GENERATE_SOURCEMAP=false NODE_PATH=. node scripts/build.js",

@@ -116,7 +116,7 @@ export default {
         const [error, res] = await to(axios(`${NET.apiUrl}/address?address=${address}`));
         if (error) {
             logger.error(error);
-            return {error}
+            return error;
         }
         return parseFloat(res.data.result.balance[NET.symbol]) / 1000000000000000000;
     },

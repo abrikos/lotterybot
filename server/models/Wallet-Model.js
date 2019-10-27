@@ -67,6 +67,7 @@ modelSchema.methods.setBalance = function () {
     const wallet = this;
     MinterWallet.getBalance(wallet.address)
         .then(balance => {
+            if(isNaN(balance)) return;
             wallet.balance = balance;
             wallet.save();
         });
