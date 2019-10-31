@@ -4,12 +4,15 @@ import moment from "moment";
 const t = require("server/i18n");
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-const config = require("client/lib/config");
+//const config = require("server/config");
+const Configurator = require("server/lib/Configurator").default;
 const Wallet = require('./Wallet-Model');
 const logger = require('logat');
 const shortUrl = require('shorturl');
 
+
 const modelSchema = new Schema({
+        coin: {type: String, required: true},
         stopLimit: {type: Number, default: 1000},
         finishTime: {type: Number, default: 0},
         startTime: {type: Number, default: 0},
@@ -27,7 +30,7 @@ const modelSchema = new Schema({
 
 modelSchema.methods.finish = async function () {
     if (this.finishTime) return;
-    if (this.wallet.balance < Math.ceil(config.lotteryStopSum / config.lotteryPercent)) return;
+    if (this.wallet.balance < Math.ceil(Configurator.config.coins[this.coin].stopSum / Configurator.config.lotteryPercent)) return;
 
     const players = [];
     for (const tx of this.transactions) {
@@ -35,25 +38,24 @@ modelSchema.methods.finish = async function () {
             players.push(tx);
         }
     }
-    const winner = players[Math.floor(Math.random() * players.length)];
-
+    this.winner = players[Math.floor(Math.random() * players.length)];
+    const Crypto = Configurator.getCryptoProcessor(this.coin);
     const list = [
-        {to: winner.from, value: config.lotteryStopSum},
-        {to: process.env.ADDRESS, value: this.wallet.balance - config.lotteryStopSum},
+        {to: this.winner.from, value: Configurator.config.coins[this.coin].stopSum},
+        {to: Configurator.config.coins[this.coin].ownerAddress, value: this.wallet.balance - Configurator.config.lotteryStopSum},
     ];
-    const commission = await MinterWallet.multiSendCommission(list, this.wallet.seed, config.appName + '. Lottery winner');
+    const commission = await Crypto.multiSendCommission(list, this.wallet.seed, Configurator.config.appName + '. Lottery winner');
     list[0].value += commission / 2;
     list[1].value -= commission;
-    const paymentTx = await MinterWallet.multiSendTx(list, this.wallet.seed, config.appName + '. Lottery winner');
+    const paymentTx = await Crypto.multiSendTx(list, this.wallet.seed, Configurator.config.appName + '. Lottery winner');
     if (paymentTx.error) {
         return logger.error("Can't send to winner", this.wallet.address, list, paymentTx);
     }
-    this.finishTime = new Date().valueOf();
-    this.winner = winner;
     this.paymentTx = paymentTx.hash;
+    this.finishTime = new Date().valueOf();
     await this.save();
     await this.wallet.close();
-    return paymentTx;
+    return this.paymentTx;
 };
 
 modelSchema.statics.getBank = async function () {
@@ -79,15 +81,15 @@ modelSchema.statics.getAll = async function () {
     }
 };
 
-modelSchema.statics.getCurrent = async function () {
-    let lottery = await this.findOne({finishTime: 0})
+modelSchema.statics.getCurrent = async function (coin) {
+    let lottery = await this.findOne({finishTime: 0, coin})
         .populate([
             {path: 'transactions', populate: 'wallet'},
             'wallet'
         ]);
     if (!lottery) {
-        const wallet = await Wallet.createNew();
-        lottery = new this({finishTime: 0, startTime: new Date().valueOf(), wallet});
+        const wallet = await Wallet.createNew(coin);
+        lottery = new this({finishTime: 0, startTime: new Date().valueOf(), wallet, coin});
         await lottery.save();
     }
     return lottery;
@@ -118,20 +120,21 @@ modelSchema.virtual('startDate')
 
 
 modelSchema.methods.getLotteryLink = function () {
-    return (MinterWallet.getNetworkConfig().explorerUrl + '/address/' + this.wallet.address);
+    const Crypto = Configurator.getCryptoProcessor(this.coin);
+    return (Crypto.getAddressLink(this.wallet.address));
 };
 
 modelSchema.methods.getWinnerLink = function () {
-    return (MinterWallet.getNetworkConfig().explorerUrl + '/transactions/' + this.paymentTx);
+    const Crypto = Configurator.getCryptoProcessor(this.coin);
+    return (Crypto.getTransactionLink(this.paymentTx));
 };
 
 modelSchema.methods.getInfo = async function () {
     const lotteryTickets = await this.ticketsCount();
-    return t('intro')
-        + '\n' + t('Referral program') + `: *${config.referralPercent*100}%*`
+    return t('Referral program') + `: *${Configurator.config.referralPercent * 100}%*`
         + '\n' + t('Lottery starts') + `: *${this.startDate}*`
-        + '\n' + t('The lottery will end when the balance of it wallet reaches') + `: *${Math.ceil(config.lotteryStopSum / config.lotteryPercent)}* BIP`
-        + '\n' + t('Current lottery balance') + `: *${this.wallet.balance.toFixed(2)}* BIP`
+        + '\n' + t('The lottery will end when the balance of it wallet reaches') + `: *${Math.ceil(Configurator.config.coins[this.coin].stopSum / Configurator.config.lotteryPercent)}* ${this.coin}`
+        + '\n' + t('Current lottery balance') + `: *${this.wallet.balance.toFixed(2)}* ${this.coin}`
         + '\n' + t('Lottery wallet') + `: *${this.getLotteryLink()}*`
     //+ '\n' + t('Total tickets') + `:* ${lotteryTickets}*`
 };

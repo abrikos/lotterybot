@@ -1,11 +1,10 @@
 import BotProcess from 'server/lib/bot/bot-process';
-import CronProcess from 'server/lib/cron';
+import CronProcess from 'server/lib/cron-process';
 const TelegramBot = require('node-telegram-bot-api');
 const Agent = require('socks5-https-client/lib/Agent');
 require('dotenv').config()
-const token = process.env.BOT_KEY;
 
-const bot = new TelegramBot(token, {
+const bot = new TelegramBot(process.env.BOT_TOKEN, {
     polling: true,
     request: {
         agentClass: Agent,

@@ -8,14 +8,7 @@ export default {
     parent: 'root',
     getLabel: () => t("Information"),
     getMessage: async (user) => {
-        const lottery = await mongoose.Lottery.getCurrent();
-        const tickets = await user.ticketsCount();
-        const message =  (await lottery.getInfo())
-            + '\n---------------'
-            + '\n' + t('To buy ticket please send any amount of BIP to this address')
-            + '\n' + `*${user.wallet.address}*`
-            + '\n' + t('1 BIP = 1 ticket')
-            + '\n' + t('Your have tickets') + `:* ${tickets}*`
+        const message =  t('intro')
             + '\n---------------'
             + '\n' + t('Support') + ': @abrikostrator'
 

@@ -3,21 +3,18 @@ import MinterWallet from "../lib/MinterWallet";
 
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-const config = require('../../client/lib/config');
-const hostConfig = require("../../client/lib/host.config.local");
-const NET = config[hostConfig.net];
+const Configurator = require("server/lib/Configurator").default;
 
 
 const modelSchema = new Schema({
         hash: {type: String, required: true},
         from: {type: String, required: true},
-        //to: {type: String, required: true, index: true},
-        //symbol: {type: String, required: true},
+        to: {type: String, required: true, index: true},
+        coin: {type: String, required: true},
         message: {type: Object},
         ended: {type: Boolean, default: false},
         chainId: {type: Number, required: true},
         date: {type: Number, required: true},
-        data: {type: Object, required: true},
         value: {type: Number, default: 0},
         lottery: {type: mongoose.Schema.Types.ObjectId, ref: 'Lottery', required: [true, 'Lottery required']},
         wallet: {type: mongoose.Schema.Types.ObjectId, ref: 'Wallet'},
@@ -35,13 +32,13 @@ modelSchema.statics.bank = async function () {
     for (const tx of txs) {
         sum += tx.value;
     }
-    return sum * config.lotteryPercent;
+    return sum * Configurator.config.lotteryPercent;
 };
 
-modelSchema.statics.createNew = function (tx) {
+modelSchema.statics.createNew = function (coin,tx) {
     try {
         return this.create({
-            chainId: NET.chainId,
+            chainId: Configurator.config.coins[coin].chainId,
             ...tx
         })
     } catch (e) {

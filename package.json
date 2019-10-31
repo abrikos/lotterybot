@@ -132,6 +132,7 @@
     "socket.io": "^2.1.1",
     "socks5-https-client": "^1.2.1",
     "style-loader": "0.23.0",
+    "telegraf": "^3.33.3",
     "terser-webpack-plugin": "1.1.0",
     "url-loader": "1.1.1",
     "uuid": "^3.3.2",

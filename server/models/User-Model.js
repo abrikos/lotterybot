@@ -4,7 +4,7 @@ const findOrCreate = require('mongoose-find-or-create');
 const Wallet = require('./Wallet-Model');
 const Lottery = require('./Lottery-Model');
 const logger = require("logat");
-const config = require("../../client/lib/config");
+const Configurator = require("server/lib/Configurator").default;
 
 const modelSchema = new Schema({
         id: {type: Number, unique: true},
@@ -25,41 +25,44 @@ const modelSchema = new Schema({
 modelSchema.plugin(findOrCreate);
 
 modelSchema.statics.getUser = async function (from) {
-    const populate = [{path: 'wallets', options: {sort: {'date': -1}}}, {path:'referrals'}];
+    const populate = [{path: 'wallets', options: {sort: {'date': -1}}}, {path: 'referrals'}];
     let user = await this.findOne({id: from.id})
     //.populate(populate);
     if (!user) {
         user = new this(from);
         await user.save();
-        await Wallet.createNew(user);
-
+        for (const coin of Configurator.config.coins) {
+            await Wallet.createNew(coin, user);
+        }
     }
     user = await user.populate(populate).execPopulate();
     return user;
 };
 
 
-modelSchema.methods.ticketsCount = async function () {
+modelSchema.methods.ticketsCount = async function (lottery) {
     const user = this;
-    const lottery = await Lottery.getCurrent();
 
-    const transactions = lottery.transactions.filter(t => { return  t.wallet.user.toString() === user._id.toString()});
+    const transactions = lottery.transactions.filter(t => {
+        return t.wallet.user.toString() === user._id.toString()
+    });
 
     let sum = 0;
-    for(const t of transactions){
+    for (const t of transactions) {
         sum += t.value;
     }
     return Math.ceil(sum);
 };
 
-modelSchema.virtual('wallet')
-    .get(function () {
-        return this.wallets[0];
-    });
+modelSchema.methods.getWallet = function (coin) {
+    console.log(this.wallets.find(w => w.coin === coin))
+    return this.wallets.find(w => w.coin === coin)
+};
+
 
 modelSchema.virtual('referralLink')
     .get(function () {
-        return `https://telegram.me/${config.botName}?start=${this._id}`;
+        return `https://telegram.me/${Configurator.botName}?start=${this._id}`;
     });
 
 modelSchema.virtual('referrals', {

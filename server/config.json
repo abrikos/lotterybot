@@ -1,0 +1,36 @@
+{
+  "appName": "Abrikos lottery",
+  "botName": "bip_lottery_bot",
+  "lotteryPercent": 0.98,
+  "referralPercent": 0.3,
+  "languages": [
+    {
+      "title": "Русский 🇷🇺",
+      "language_code": "ru"
+    },
+    {
+      "title": "English 🇺🇸",
+      "language_code": "en"
+    }
+  ],
+  "coins": {
+    "BIP": {
+      "stopSum": 1000,
+      "chainId": 1,
+      "explorerUrl": "https://explorer.minter.network",
+      "explorerApiUrl": "https://explorer-api.minter.network/api/v1",
+      "apiUrl": "https://api.minter.stakeholder.space/",
+      "centrifuge": "wss://explorer-rtm.minter.network/connection/websocket",
+      "ownerAddress": "Mx389a3ec7916a7c40928ab89248524f67a834eab7"
+    },
+    "MNT": {
+      "stopSum": 1000,
+      "chainId": 2,
+      "explorerUrl": "https://testnet.explorer.minter.network",
+      "explorerApiUrl": "https://explorer-api.testnet.minter.network/api/v1",
+      "apiUrl": "https://api.testnet.minter.stakeholder.space/",
+      "centrifuge": "wss://explorer-rtm.testnet.minter.network/connection/websocket",
+      "ownerAddress": "Mx389a3ec7916a7c40928ab89248524f67a834eab7"
+    }
+  }
+}

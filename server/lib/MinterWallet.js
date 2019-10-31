@@ -1,54 +1,28 @@
 import moment from "moment";
 
 const {Minter, SendTxParams, MultisendTxParams, prepareSignedTx} = require("minter-js-sdk");
-
-
 const axios = require("axios");
 const logger = require('logat');
 const minterWallet = require('minterjs-wallet');
-//const api = `https://${config.mainNet}/api/v1`;
 require('dotenv').config()
-const config = require("../../client/lib/config");
-const hostConfig = require("../../client/lib/host.config.local")
-const NET = config[hostConfig.net];
-const minterSDK = new Minter({apiType: 'node', baseURL: NET.apiUrl});
+const config = require("server/config");
 const to = require('./to');
 
-/*async function sendTx(from, address, mnemonic, amount) {
-    const wallet = minterWallet.walletFromMnemonic(mnemonic);
-    const nonce = await minterSDK.getNonce(from);
-    const paramsProto = {
-        privateKey: wallet.getPrivateKey(),
-        chainId: NET.chainId,
-        nonce,
-        address,
-        amount: amount - 0.01,
-        coinSymbol: NET.symbol,
-        feeCoinSymbol: NET.symbol,
-        gasPrice: 1
-    };
-    const txParams = new SendTxParams(paramsProto);
-    const tx = prepareSignedTx(txParams);
-    //logger.info(`${config[config.net].apiUrl}/send_transaction?tx=0x${tx.serialize().toString('hex')}`)
-    try {
-        const res = await axios(`${NET.apiUrl}/send_transaction?tx=0x${tx.serialize().toString('hex')}`);
-        return res.data;
-    }catch (e) {
-        //console.error('MinterWallet axios:', 'Rsult', e.response)
-        return {error: e.response.data.error};
-    }
-
-}*/
-
 export default {
-    multiSendCommission: async function (list, mnemonic, message) {
+    coin: null,
+    init: (coin) => {
+        this.coin = coin;
+        return this
+    },
+    multiSendCommission: async (list, mnemonic, message) => {
         const txSigned = await this.getTxSigned(this.multiSendTxList(list), mnemonic, message);
+        const minterSDK = new Minter({apiType: 'node', baseURL: config.coins[this.coin].apiUrl});
         return await minterSDK.estimateTxCommission({transaction: txSigned.serialize().toString('hex')}) / 1000000000000000000;
     },
 
-    multiSendTxList: function (list) {
+    multiSendTxList: (list) => {
         for (const l of list) {
-            l.coin = NET.symbol;
+            l.coin = this.coin;
         }
         return {list};
     },
@@ -60,21 +34,22 @@ export default {
     send: async function (address, mnemonic, amount, message) {
         const txProto = {
             address,
-            coinSymbol: NET.symbol,
+            coinSymbol:
             amount,
         };
         return await this.postTx(txProto, mnemonic, message);
     },
 
-    getTxSigned: async function (txProto, mnemonic, message) {
+    getTxSigned: async (txProto, mnemonic, message) => {
         const wallet = minterWallet.walletFromMnemonic(mnemonic);
+        const minterSDK = new Minter({apiType: 'node', baseURL: config.coins[this.coin].apiUrl});
         const [error, nonce] = await to(minterSDK.getNonce(wallet.getAddressString()));
         txProto.nonce = nonce;
         txProto.privateKey = wallet.getPrivateKey();
-        txProto.chainId = NET.chainId;
+        txProto.chainId = config.coins[this.coin].chainId;
         txProto.gasPrice = 1;
         txProto.message = message;
-        txProto.feeCoinSymbol = NET.symbol;
+        txProto.feeCoinSymbol = config.coins[this.coin].symbol;
 
         if (error) {
             logger.error(error);
@@ -85,9 +60,10 @@ export default {
         return prepareSignedTx(txParams);
     },
 
-    postTx: async function (txProto, mnemonic, message) {
+    postTx: async (txProto, mnemonic, message) => {
         const isMultisend = !!txProto.list;
         const txSigned = await this.getTxSigned(txProto, mnemonic, message);
+        const minterSDK = new Minter({apiType: 'node', baseURL: config.coins[this.coin].apiUrl});
         //logger.info(txProto.list)
         try {
             const commission = await minterSDK.estimateTxCommission({transaction: txSigned.serialize().toString('hex')}) / 1000000000000000000;
@@ -112,13 +88,16 @@ export default {
         }
     },
 
-    getBalance: async function (address) {
-        const [error, res] = await to(axios(`${NET.apiUrl}/address?address=${address}`));
+    getBalance: async (address) => {
+        if (!config.coins[this.coin]) {
+            return 0;
+        }
+        const [error, res] = await to(axios(`${config.coins[this.coin].apiUrl}/address?address=${address}`));
         if (error) {
             logger.error(error);
             return error;
         }
-        return parseFloat(res.data.result.balance[NET.symbol]) / 1000000000000000000;
+        return parseFloat(res.data.result.balance[config.coins[this.coin].symbol]) / 1000000000000000000;
     },
 
 
@@ -149,17 +128,20 @@ export default {
         return this.adaptTransactions(list);
     },
 
-    adaptTx: function (tx) {
+    adaptTx: (tx) => {
+        tx.coin = this.coin;
         const message = this.decode(tx.payload);
         try {
             tx.message = JSON.parse(message);
         } catch (e) {
-            tx.message = {message};
+            tx.message = message;
         }
+
         tx.date = moment(tx.timestamp);
         if (tx.type !== 1) tx.error = 'WRONG TX TYPE';
         tx.value = tx.data.value * 1;
-        if (tx.data.coin !== NET.symbol) {
+        tx.to = tx.data.to;
+        if (tx.data.coin !== this.coin) {
             tx.error = 'WRONG COIN';
         }
 
@@ -167,12 +149,12 @@ export default {
         /*if ([1, 13].indexOf(tx.type) === -1) {
             tx.error = 'WRONG TX TYPE';
         } else if (tx.data.list) {
-            const list = tx.data.list.filter(l => l.coin === NET.symbol)
+            const list = tx.data.list.filter(l => l.coin === config.coins[coin].symbol)
             if (!list.length) {
                 tx.error = 'NO LIST';
             }
             tx.data.list = list;
-        } else if (tx.data.coin !== NET.symbol) {
+        } else if (tx.data.coin !== config.coins[coin].symbol) {
             tx.error = 'WRONG COIN';
         }*/
         return tx;
@@ -198,20 +180,24 @@ export default {
         return transactions.filter(tx => tx.from === mainAddress)
     },
 
-    get: async function (action) {
+    get: async (action) => {
         try {
-            const res = await axios(`${NET.explorerApiUrl}${action}`)
+            const res = await axios(`${config.coins[this.coin].explorerApiUrl}${action}`);
             return res.data.data
         } catch (e) {
             if (!e.response) {
                 return {error: e.message};
             }
-            return {error: e.response.status, url: `${NET.explorerApiUrl}${action}`}
+            return {error: e.response.status, url: `${config.coins[this.coin].explorerApiUrl}${action}`}
         }
     },
-    getNetworkConfig: function(){
-        return NET;
+    getNetworkConfig: () => {
+        return config.coins[this.coin];
     },
+
+    getAddressLink: address => config.coins[this.coin].explorerUrl + '/address/' + address,
+    getTransactionLink: hash => config.coins[this.coin].explorerUrl + '/transaction/' + hash,
+
 
     checkAddress: function (address) {
         return address.match(/^Mx[a-fA-F0-9]{40}$/)

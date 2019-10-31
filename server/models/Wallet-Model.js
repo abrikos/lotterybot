@@ -1,8 +1,9 @@
 import MinterWallet from "server/lib/MinterWallet";
+
 const {generateWallet} = require("minterjs-wallet");
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-const config = require("../../client/lib/config");
+const Configurator = require("server/lib/Configurator").default;
 const logger = require('logat');
 
 const modelSchema = new Schema({
@@ -11,6 +12,7 @@ const modelSchema = new Schema({
         balance: {type: Number, default: 0},
         amount: {type: Number, default: 0},
         closed: {type: Boolean, default: false},
+        coin: {type: String, required: true},
         fundsMovedTx: String,
         user: {type: mongoose.Schema.Types.ObjectId, ref: 'User'},
     },
@@ -46,12 +48,14 @@ modelSchema.methods.moveToLottery = function (lottery) {
     console.log(this.user)
     if (this.user.parent && this.user.parent.paymentAddress) {
         const to = this.user.parent.paymentAddress;
-        referral = this.balance * config.referralPercent;
+        referral = this.balance * Configurator.config.referralPercent;
         list.push({to, value: referral});
     }
     list.push({to: lottery.wallet.address, value: this.balance - referral});
-    logger.info('Move to lottery (if 2 then 0 - to referral)', list)
-    MinterWallet.multiSendTx(list, this.seed, config.appName +  '. Referral payment')
+    logger.info('Move to lottery (if 2 then 0 - to referral)', list);
+    // eslint-disable-next-line default-case
+    const Crypto = Configurator.getCryptoProcessor(lottery.coin)
+    Crypto.multiSendTx(lottery.coin, list, this.seed, Configurator.config.appName + '. Referral payment')
         .then(paymentTx2 => {
             if (paymentTx2.error) {
                 logger.error("Can't move from user wallet to lottery wallet", list, paymentTx2);
@@ -59,15 +63,18 @@ modelSchema.methods.moveToLottery = function (lottery) {
             }
             this.balance = 0;
             this.save();
-        })
+        });
 
-};
+
+}
+;
 
 modelSchema.methods.setBalance = function () {
     const wallet = this;
-    MinterWallet.getBalance(wallet.address)
+    const Crypto = Configurator.getCryptoProcessor(this.coin)
+    Crypto.getBalance(wallet.address)
         .then(balance => {
-            if(isNaN(balance)) return;
+            if (isNaN(balance)) return;
             wallet.balance = balance;
             wallet.save();
         });
@@ -87,14 +94,16 @@ modelSchema.statics.setBalances = function () {
 
 };
 
-modelSchema.statics.createNew = async function (user) {
+modelSchema.statics.createNew = async function (coin, user) {
     const wallet = new this();
     const wt = generateWallet();
+    wallet.coin = coin;
     wallet.seed = wt._mnemonic;
     wallet.address = wt.getAddressString();
     wallet.date = new Date().valueOf();
     wallet.user = user;
     await wallet.save();
+    logger.info('Wallet created', coin)
     return wallet;
 };
 
