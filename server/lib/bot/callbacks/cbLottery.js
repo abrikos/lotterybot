@@ -16,8 +16,6 @@ export default {
             + '\n' + `*${user.getWallet(coin).address}*`
             + '\n' + t('1 BIP = 1 ticket')
             + '\n' + t('Your have tickets') + `:* ${tickets}*`
-            + '\n---------------'
-            + '\n' + t('Support') + ': @abrikostrator'
 
         return message;
     }

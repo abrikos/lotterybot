@@ -1,4 +1,4 @@
-import BotProcess from 'server/lib/bot/bot-process';
+import BotProcess from 'server/lib/bot-process';
 import CronProcess from 'server/lib/cron-process';
 const TelegramBot = require('node-telegram-bot-api');
 const Agent = require('socks5-https-client/lib/Agent');

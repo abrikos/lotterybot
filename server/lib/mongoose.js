@@ -15,9 +15,8 @@ module.exports = {
         if (!cookie.length) return false;
         return cookie.indexOf(model.cookieId) !== -1;
     },
-    User: require('../models/User-Model'),
-    Wallet: require('../models/Wallet-Model'),
-    Transaction: require('../models/Transaction-Model'),
-    Lottery: require('../models/Lottery-Model'),
-
+    User: require('server/models/User-Model'),
+    Wallet: require('server/models/Wallet-Model'),
+    Transaction: require('server/models/Transaction-Model'),
+    Lottery: require('server/models/Lottery-Model'),
 };

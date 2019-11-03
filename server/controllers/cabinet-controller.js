@@ -1,7 +1,7 @@
 const passportLib = require('../lib/passport');
 const mongoose = require("../lib/mongoose");
 const logger = require('logat');
-const Minter = require('../lib/MinterWallet');
+const Minter = require('server/lib/networks/Minter');
 const to = require('../lib/to');
 const qr = require('qr-image');
 

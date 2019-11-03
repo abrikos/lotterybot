@@ -36,5 +36,19 @@
 	"Your referral link": "Your referral link",
 	"Your referral deductions will be sent to": "Your referral deductions will be sent to",
 	"Hello!": "Hello!",
-	"Referral program": "Referral program"
+	"Referral program": "Referral program",
+	"Hello2!": "Hello2!",
+	"Main menu": "Main menu",
+	"List of supported crypto currencies": "List of supported crypto currencies",
+	"Lotteries": "Lotteries",
+	"Crypto currency": "Crypto currency",
+	"My referral addresses": "My referral addresses",
+	"Bets": "Bets",
+	"Set the addresses for each cryptocurrency to which referral deductions will be sent to you": "Set the addresses for each cryptocurrency to which referral deductions will be sent to you",
+	"Add address for crypto": "Add address for crypto",
+	"Add address for": "Add address for",
+	"Enter new referral address for": "Enter new referral address for",
+	"Wrong address for network": "Wrong address for network",
+	"New address set": "New address set",
+	"Back": "Back"
 }

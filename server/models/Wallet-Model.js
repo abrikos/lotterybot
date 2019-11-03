@@ -1,4 +1,4 @@
-import MinterWallet from "server/lib/MinterWallet";
+import MinterWallet from "server/lib/networks/Minter";
 
 const {generateWallet} = require("minterjs-wallet");
 const mongoose = require('mongoose');
@@ -12,7 +12,7 @@ const modelSchema = new Schema({
         balance: {type: Number, default: 0},
         amount: {type: Number, default: 0},
         closed: {type: Boolean, default: false},
-        coin: {type: String, required: true},
+        network: {type: String, required: true},
         fundsMovedTx: String,
         user: {type: mongoose.Schema.Types.ObjectId, ref: 'User'},
     },
@@ -23,6 +23,13 @@ const modelSchema = new Schema({
         // see http://stackoverflow.com/q/13133911/488666
         toJSON: {virtuals: true}
     });
+
+modelSchema.virtual('coin')
+    .get(function () {
+        return Configurator.getNetwork(this.network).coin
+    });
+
+
 modelSchema.statics.fieldsAllowed = ['address', 'date', 'balance', 'amount'];
 
 
@@ -48,14 +55,14 @@ modelSchema.methods.moveToLottery = function (lottery) {
     console.log(this.user)
     if (this.user.parent && this.user.parent.paymentAddress) {
         const to = this.user.parent.paymentAddress;
-        referral = this.balance * Configurator.config.referralPercent;
+        referral = this.balance * Configurator.getNetwork(this.network).referralPercent;
         list.push({to, value: referral});
     }
     list.push({to: lottery.wallet.address, value: this.balance - referral});
     logger.info('Move to lottery (if 2 then 0 - to referral)', list);
     // eslint-disable-next-line default-case
-    const Crypto = Configurator.getCryptoProcessor(lottery.coin)
-    Crypto.multiSendTx(lottery.coin, list, this.seed, Configurator.config.appName + '. Referral payment')
+    const Crypto = Configurator.getCryptoProcessor(lottery.network)
+    Crypto.multiSendTx(list, this.seed, Configurator.config.appName + '. Referral payment')
         .then(paymentTx2 => {
             if (paymentTx2.error) {
                 logger.error("Can't move from user wallet to lottery wallet", list, paymentTx2);
@@ -71,7 +78,7 @@ modelSchema.methods.moveToLottery = function (lottery) {
 
 modelSchema.methods.setBalance = function () {
     const wallet = this;
-    const Crypto = Configurator.getCryptoProcessor(this.coin)
+    const Crypto = Configurator.getCryptoProcessor(this.network)
     Crypto.getBalance(wallet.address)
         .then(balance => {
             if (isNaN(balance)) return;
@@ -94,16 +101,16 @@ modelSchema.statics.setBalances = function () {
 
 };
 
-modelSchema.statics.createNew = async function (coin, user) {
+modelSchema.statics.createNew = async function (network, user) {
     const wallet = new this();
     const wt = generateWallet();
-    wallet.coin = coin;
+    wallet.network = network;
     wallet.seed = wt._mnemonic;
     wallet.address = wt.getAddressString();
     wallet.date = new Date().valueOf();
     wallet.user = user;
     await wallet.save();
-    logger.info('Wallet created', coin)
+    //logger.info('Wallet created', network)
     return wallet;
 };
 

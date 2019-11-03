@@ -1,23 +1,31 @@
-import MinterWallet from "../lib/MinterWallet";
+import MinterWallet from "server/lib/networks/Minter";
+import Configurator from 'server/lib/Configurator'
 
 const Centrifuge = require("centrifuge");
 const WebSocketClient = require("websocket").w3cwebsocket;
 const logger = require('logat');
 const CronJob = require('cron').CronJob;
-const config = require('server/config');
 const mongoose = require('./mongoose');
 
 export default {
     bot: null,
     init(bot) {
+        if (0) {
+            mongoose.User.deleteMany({}, console.log);
+            mongoose.Wallet.deleteMany({}, console.log);
+            mongoose.Lottery.deleteMany({}, console.log);
+            mongoose.Transaction.deleteMany({}, console.log);
+            return;
+        }
+
         this.bot = bot;
         const jobs = {};
         jobs.seconds5 = new CronJob('*/10 * * * * *', async () => {
-            for (const coin in config.coins) {
-                mongoose.Wallet.setBalances(coin);
-                const lottery = await mongoose.Lottery.getCurrent(coin);
+            mongoose.Wallet.setBalances();
+            for (const network of Configurator.getNetsKeys()) {
+                const lottery = await mongoose.Lottery.getCurrent(network);
                 lottery.finish();
-                mongoose.Wallet.find({balance: {$gt: 0}, user: {$ne: null}, coin})
+                mongoose.Wallet.find({balance: {$gt: 0}, user: {$ne: null}, network})
                     .populate([{path: 'user', populate: 'parent'}])
                     .then(wallets => {
                         for (const w of wallets) w.moveToLottery(lottery)
@@ -30,9 +38,9 @@ export default {
                 .populate('wallets')
                 .then(users => {
                     for (const user of users) {
-                        for (const coin in config.coins) {
-                            if (!user.wallets.filter(w => w.coin === coin).length) {
-                                mongoose.Wallet.createNew(coin, user);
+                        for (const network of Configurator.getNetsKeys()) {
+                            if (!user.getWallet(network)) {
+                                mongoose.Wallet.createNew(network, user);
                             }
                         }
                     }
@@ -58,35 +66,35 @@ export default {
         //this.minterCentrifuge('MNT');
 
     },
-    async checkTransactions(coin, tx) {
+    async checkTransactions(network, tx) {
         if (tx.error) return;
         if (!tx.data.to) return;
         if (!tx.value) return;
-        const wallet = await mongoose.Wallet.findOne({address: tx.data.to, user: {$ne: null}, coin}).populate([{path: 'user', populate: 'parent'}]);
+        const wallet = await mongoose.Wallet.findOne({address: tx.data.to, user: {$ne: null}, network}).populate([{path: 'user', populate: 'parent'}]);
         if (!wallet) return;
 
         wallet.balance += tx.value;
         await wallet.save();
         tx.wallet = wallet;
 
-        const lottery = await mongoose.Lottery.getCurrent(coin);
+        const lottery = await mongoose.Lottery.getCurrent(network);
         const winnerTx = await lottery.finish();
         if (winnerTx) {
 
-            this.bot.sendMessage(process.env.GROUP_ID, `${coin} lottery finished. Prize: *${winnerTx.value}* ${coin}\nTX: ${winnerTx.hash}`, {parse_mode: "Markdown"});
+            this.bot.sendMessage(process.env.GROUP_ID, `${network} lottery finished. Prize: *${winnerTx.value}* ${Configurator.getNetwork(network).coin}\nTX: ${winnerTx.hash}`, {parse_mode: "Markdown"});
         }
         tx.lottery = lottery;
         const message = `Tickets bought: *${tx.value}*\nTX:*${tx.hash}*)\n\n${await lottery.getInfo()}`;
         this.bot.sendMessage(process.env.GROUP_ID, message, {parse_mode: "Markdown"});
-        await mongoose.Transaction.createNew(coin, tx);
+        await mongoose.Transaction.createNew(network, tx);
     },
 
-    minterCentrifuge(coin) {
-        const centrifuge = new Centrifuge(config.coins[coin].centrifuge, {websocket: WebSocketClient});
+    minterCentrifuge(network) {
+        const centrifuge = new Centrifuge(Configurator.getNetwork(network).centrifuge, {websocket: WebSocketClient});
         centrifuge.connect();
         centrifuge.subscribe("transactions", tx => {
             //console.log(tx)
-            this.checkTransactions(coin, MinterWallet.adaptTx(coin, tx.data))
+            this.checkTransactions(network, MinterWallet.adaptTx(tx.data))
         });
 
 

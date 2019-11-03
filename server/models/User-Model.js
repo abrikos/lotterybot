@@ -6,6 +6,12 @@ const Lottery = require('./Lottery-Model');
 const logger = require("logat");
 const Configurator = require("server/lib/Configurator").default;
 
+const referralAddressSchema = new Schema({
+    address: {type: String, require: true},
+    network: {type: String, require: true},
+});
+
+
 const modelSchema = new Schema({
         id: {type: Number, unique: true},
         first_name: String,
@@ -13,6 +19,8 @@ const modelSchema = new Schema({
         paymentAddress: String,
         language_code: String,
         changeAddress: Boolean,
+        addresses: [referralAddressSchema],
+        waitForReferralAddress: String,
         parent: {type: mongoose.Schema.Types.ObjectId, ref: 'User'},
     },
     {
@@ -31,14 +39,30 @@ modelSchema.statics.getUser = async function (from) {
     if (!user) {
         user = new this(from);
         await user.save();
-        for (const coin of Configurator.config.coins) {
-            await Wallet.createNew(coin, user);
+        for (const network of Configurator.getNetsKeys()) {
+            await Wallet.createNew(network, user);
         }
     }
     user = await user.populate(populate).execPopulate();
     return user;
 };
 
+
+modelSchema.methods.setReferralAddress = function (address) {
+    const network = Configurator.getNetwork(this.waitForReferralAddress);
+    if (!network) return {error: 'WRONG NETWORK:' + this.waitForReferralAddress};
+    const regexp = new RegExp(network.walletAddressRegexp);
+    if (!address.match(regexp)) return {error: 'Wrong address', network}
+    const found = this.addresses.find(a => a.network === network)
+    if (found) {
+        found.address = address;
+    } else {
+        this.addresses.push({address, network: network.key})
+    }
+    this.waitForReferralAddress = null;
+    this.save();
+    return {network}
+};
 
 modelSchema.methods.ticketsCount = async function (lottery) {
     const user = this;
@@ -54,9 +78,8 @@ modelSchema.methods.ticketsCount = async function (lottery) {
     return Math.ceil(sum);
 };
 
-modelSchema.methods.getWallet = function (coin) {
-    console.log(this.wallets.find(w => w.coin === coin))
-    return this.wallets.find(w => w.coin === coin)
+modelSchema.methods.getWallet = function (network) {
+    return this.wallets.find(w => w.network === network)
 };
 
 

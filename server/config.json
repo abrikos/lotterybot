@@ -2,7 +2,7 @@
   "appName": "Abrikos lottery",
   "botName": "bip_lottery_bot",
   "lotteryPercent": 0.98,
-  "referralPercent": 0.3,
+
   "languages": [
     {
       "title": "Русский 🇷🇺",
@@ -13,9 +13,40 @@
       "language_code": "en"
     }
   ],
-  "coins": {
-    "BIP": {
+  "networks": [
+    {
+      "key": "eth",
+      "walletAddressRegexp" : "^Mx[a-fA-F0-9]{40}$",
+      "referralPercent": 0.3,
+      "name": "Ethereum",
+      "coin": "ETH",
+      "stopSum": 0.1,
+      "chainId": 1,
+      "home": "https://www.ethereum.org",
+      "explorerUrl": "https://etherscan.io",
+      "explorerApiUrl": "https://api.etherscan.io/api?module="
+    },
+    {
+      "key": "eth-ropsten",
+      "walletAddressRegexp" : "^Mx[a-fA-F0-9]{40}$",
+      "referralPercent": 0.3,
+      "name": "Ethereum (ropsten testnet)",
+      "coin": "ETH",
+      "stopSum": 1,
+      "chainId": 3,
+      "home": "https://faucet.ropsten.be",
+      "explorerUrl": "https://ropsten.etherscan.io",
+      "explorerApiUrl": "https://api-ropsten.etherscan.io/api?module="
+    },
+    {
+      "key": "minter-bip",
+      "walletAddressRegexp" : "^Mx[a-fA-F0-9]{40}$",
+      "referralPercent": 0.3,
+      "enabled": true,
+      "name": "Minter BIP",
+      "coin": "BIP",
       "stopSum": 1000,
+      "home": "https://www.minter.network",
       "chainId": 1,
       "explorerUrl": "https://explorer.minter.network",
       "explorerApiUrl": "https://explorer-api.minter.network/api/v1",
@@ -23,8 +54,15 @@
       "centrifuge": "wss://explorer-rtm.minter.network/connection/websocket",
       "ownerAddress": "Mx389a3ec7916a7c40928ab89248524f67a834eab7"
     },
-    "MNT": {
+    {
+      "key": "minter-mnt",
+      "walletAddressRegexp" : "^Mx[a-fA-F0-9]{40}$",
+      "referralPercent": 0.3,
+      "enabled": true,
+      "name": "Minter MNT (testnet)",
+      "coin": "MNT",
       "stopSum": 1000,
+      "home": "https://www.minter.network",
       "chainId": 2,
       "explorerUrl": "https://testnet.explorer.minter.network",
       "explorerApiUrl": "https://explorer-api.testnet.minter.network/api/v1",
@@ -32,5 +70,5 @@
       "centrifuge": "wss://explorer-rtm.testnet.minter.network/connection/websocket",
       "ownerAddress": "Mx389a3ec7916a7c40928ab89248524f67a834eab7"
     }
-  }
+  ]
 }

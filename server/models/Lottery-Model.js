@@ -1,4 +1,4 @@
-import MinterWallet from "server/lib/MinterWallet";
+import MinterWallet from "server/lib/networks/Minter";
 import moment from "moment";
 
 const t = require("server/i18n");
@@ -12,7 +12,7 @@ const shortUrl = require('shorturl');
 
 
 const modelSchema = new Schema({
-        coin: {type: String, required: true},
+        network: {type: String, required: true},
         stopLimit: {type: Number, default: 1000},
         finishTime: {type: Number, default: 0},
         startTime: {type: Number, default: 0},
@@ -30,7 +30,7 @@ const modelSchema = new Schema({
 
 modelSchema.methods.finish = async function () {
     if (this.finishTime) return;
-    if (this.wallet.balance < Math.ceil(Configurator.config.coins[this.coin].stopSum / Configurator.config.lotteryPercent)) return;
+    if (this.wallet.balance < Math.ceil(Configurator.getNetwork(this.network).stopSum / Configurator.config.lotteryPercent)) return;
 
     const players = [];
     for (const tx of this.transactions) {
@@ -39,10 +39,10 @@ modelSchema.methods.finish = async function () {
         }
     }
     this.winner = players[Math.floor(Math.random() * players.length)];
-    const Crypto = Configurator.getCryptoProcessor(this.coin);
+    const Crypto = Configurator.getCryptoProcessor(this.network);
     const list = [
-        {to: this.winner.from, value: Configurator.config.coins[this.coin].stopSum},
-        {to: Configurator.config.coins[this.coin].ownerAddress, value: this.wallet.balance - Configurator.config.lotteryStopSum},
+        {to: this.winner.from, value: Configurator.getNetwork(this.network).stopSum},
+        {to: Configurator.getNetwork(this.network).ownerAddress, value: this.wallet.balance - Configurator.config.lotteryStopSum},
     ];
     const commission = await Crypto.multiSendCommission(list, this.wallet.seed, Configurator.config.appName + '. Lottery winner');
     list[0].value += commission / 2;
@@ -81,15 +81,17 @@ modelSchema.statics.getAll = async function () {
     }
 };
 
-modelSchema.statics.getCurrent = async function (coin) {
-    let lottery = await this.findOne({finishTime: 0, coin})
-        .populate([
-            {path: 'transactions', populate: 'wallet'},
-            'wallet'
-        ]);
+modelSchema.statics.population = [
+    {path: 'transactions', populate: 'wallet'},
+    'wallet'
+];
+
+modelSchema.statics.getCurrent = async function (network) {
+    let lottery = await this.findOne({finishTime: 0, network})
+        .populate(this.population);
     if (!lottery) {
-        const wallet = await Wallet.createNew(coin);
-        lottery = new this({finishTime: 0, startTime: new Date().valueOf(), wallet, coin});
+        const wallet = await Wallet.createNew(network);
+        lottery = new this({finishTime: 0, startTime: new Date().valueOf(), wallet, network});
         await lottery.save();
     }
     return lottery;
@@ -120,24 +122,30 @@ modelSchema.virtual('startDate')
 
 
 modelSchema.methods.getLotteryLink = function () {
-    const Crypto = Configurator.getCryptoProcessor(this.coin);
+    const Crypto = Configurator.getCryptoProcessor(this.network);
     return (Crypto.getAddressLink(this.wallet.address));
 };
 
 modelSchema.methods.getWinnerLink = function () {
-    const Crypto = Configurator.getCryptoProcessor(this.coin);
+    const Crypto = Configurator.getCryptoProcessor(this.network);
     return (Crypto.getTransactionLink(this.paymentTx));
 };
 
 modelSchema.methods.getInfo = async function () {
     const lotteryTickets = await this.ticketsCount();
-    return t('Referral program') + `: *${Configurator.config.referralPercent * 100}%*`
+    return t('Crypto currency') + `: *${Configurator.getNetwork(this.network).name}*`
+        + '\n' + t('Referral program') + `: *${Configurator.getNetwork(this.network).referralPercent * 100}%*`
         + '\n' + t('Lottery starts') + `: *${this.startDate}*`
-        + '\n' + t('The lottery will end when the balance of it wallet reaches') + `: *${Math.ceil(Configurator.config.coins[this.coin].stopSum / Configurator.config.lotteryPercent)}* ${this.coin}`
+        + '\n' + t('The lottery will end when the balance of it wallet reaches') + `: *${Math.ceil(Configurator.getNetwork(this.network).stopSum / Configurator.config.lotteryPercent)}* ${this.coin}`
         + '\n' + t('Current lottery balance') + `: *${this.wallet.balance.toFixed(2)}* ${this.coin}`
-        + '\n' + t('Lottery wallet') + `: *${this.getLotteryLink()}*`
-    //+ '\n' + t('Total tickets') + `:* ${lotteryTickets}*`
+        + '\n' + t('Lottery wallet') + `: ${this.getLotteryLink()}`
+        + '\n' + t('Total tickets') + `:* ${lotteryTickets}*`
 };
+
+modelSchema.virtual('coin')
+    .get(function () {
+        return Configurator.getNetwork(this.network).coin
+    });
 
 modelSchema.virtual('sum')
     .get(function () {

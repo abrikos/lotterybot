@@ -1,5 +1,5 @@
 import moment from "moment";
-import MinterWallet from "../lib/MinterWallet";
+import MinterWallet from "server/lib/networks/Minter";
 
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
@@ -10,7 +10,7 @@ const modelSchema = new Schema({
         hash: {type: String, required: true},
         from: {type: String, required: true},
         to: {type: String, required: true, index: true},
-        coin: {type: String, required: true},
+        network: {type: String, required: true},
         message: {type: Object},
         ended: {type: Boolean, default: false},
         chainId: {type: Number, required: true},
@@ -26,6 +26,11 @@ const modelSchema = new Schema({
         toJSON: {virtuals: true}
     });
 
+modelSchema.virtual('coin')
+    .get(function () {
+        return Configurator.getNetwork(this.network).coin
+    });
+
 modelSchema.statics.bank = async function () {
     const txs = await this.find({ended: false});
     let sum = 0;
@@ -35,10 +40,10 @@ modelSchema.statics.bank = async function () {
     return sum * Configurator.config.lotteryPercent;
 };
 
-modelSchema.statics.createNew = function (coin,tx) {
+modelSchema.statics.createNew = function (network, tx) {
     try {
         return this.create({
-            chainId: Configurator.config.coins[coin].chainId,
+            chainId: Configurator.getNetwork(network).chainId,
             ...tx
         })
     } catch (e) {

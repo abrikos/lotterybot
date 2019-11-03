@@ -1,4 +1,4 @@
-const MinterWallet = require("../lib/MinterWallet");
+const MinterWallet = require("server/lib/networks/Minter");
 
 const passportLib = require('../lib/passport');
 const passport = require('passport');
