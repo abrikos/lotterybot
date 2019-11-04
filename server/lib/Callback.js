@@ -2,7 +2,7 @@ import * as Callbacks from 'server/lib/callbacks';
 
 
 export default {
-    parseData( data ){
+    parseData(data) {
         const findModule = data.split('@');
         const module = findModule[0];
         const findAction = findModule[1].split('#');
@@ -11,10 +11,11 @@ export default {
         return {module, action, params}
     },
 
-    async process( data , user) {
-        const {module,action, params} = this.parseData(data);
+    async process(data, user) {
+        const {module, action, params} = this.parseData(data);
         const response = await Callbacks[module].process({action, params, user});
-        response.menu = {
+        const inline_keyboard = response.menu;
+        /*response.menu = {
             parse_mode: "Markdown",
             reply_markup: {
                 //keyboard: config.languageMenu,
@@ -22,7 +23,11 @@ export default {
                 //one_time_keyboard: false,
                 //resize_keyboard: true,
             },
-        };
+        };*/
+        response.menu = response.noMarkdown ? {} : {parse_mode: "Markdown"};
+        if (inline_keyboard && inline_keyboard.length) {
+            response.menu.reply_markup = {inline_keyboard};
+        }
         return response;
 
     }

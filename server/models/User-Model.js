@@ -1,10 +1,12 @@
+import {Configurator} from 'server/lib/Configurator'
+
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const findOrCreate = require('mongoose-find-or-create');
 const Wallet = require('./Wallet-Model');
 const Lottery = require('./Lottery-Model');
 const logger = require("logat");
-const Configurator = require("server/lib/Configurator").default;
+
 
 const referralAddressSchema = new Schema({
     address: {type: String, require: true},
@@ -32,28 +34,39 @@ const modelSchema = new Schema({
     });
 modelSchema.plugin(findOrCreate);
 
+modelSchema.statics.population = [
+    {
+        path: 'wallets',
+        options: {sort: {'date': -1}},
+        populate: [
+            {path: 'transactions',}
+        ]
+    },
+    {path: 'referrals'}
+];
+
 modelSchema.statics.getUser = async function (from) {
-    const populate = [{path: 'wallets', options: {sort: {'date': -1}}}, {path: 'referrals'}];
     let user = await this.findOne({id: from.id})
     //.populate(populate);
     if (!user) {
         user = new this(from);
         await user.save();
-        for (const network of Configurator.getNetsKeys()) {
+        for (const network of Configurator.getKeys()) {
             await Wallet.createNew(network, user);
         }
     }
-    user = await user.populate(populate).execPopulate();
+    user = await user.populate(this.population).execPopulate();
     return user;
 };
 
 
 modelSchema.methods.setReferralAddress = function (address) {
-    const network = Configurator.getNetwork(this.waitForReferralAddress);
+    const App = new Configurator(this.waitForReferralAddress);
+    const network = App.getNetwork();
     if (!network) return {error: 'WRONG NETWORK:' + this.waitForReferralAddress};
     const regexp = new RegExp(network.walletAddressRegexp);
     if (!address.match(regexp)) return {error: 'Wrong address', network}
-    const found = this.addresses.find(a => a.network === network)
+    const found = this.addresses.find(a => a.network === network.key)
     if (found) {
         found.address = address;
     } else {
@@ -85,7 +98,7 @@ modelSchema.methods.getWallet = function (network) {
 
 modelSchema.virtual('referralLink')
     .get(function () {
-        return `https://telegram.me/${Configurator.botName}?start=${this._id}`;
+        return `https://telegram.me/${Configurator.getBotName()}?start=${this._id}`;
     });
 
 modelSchema.virtual('referrals', {

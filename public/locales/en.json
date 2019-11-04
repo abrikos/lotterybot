@@ -45,5 +45,9 @@
 	"Hello!222": "Hello!222",
 	"List of supported crypto currencies": "List of supported crypto currencies",
 	"Lotteries": "Lotteries",
-	"Crypto currency": "Crypto currency"
+	"Crypto currency": "Crypto currency",
+	"Back": "Back",
+	"Percent completion": "Percent completion",
+	"List of addresses for payment": "List of addresses for payment",
+	"To participate in the lottery, send any amount to the address": "To participate in the lottery, send any amount to the address"
 }

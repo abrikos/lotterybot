@@ -1,11 +1,11 @@
-import MinterWallet from "server/lib/networks/Minter";
 import moment from "moment";
+import {Configurator} from 'server/lib/Configurator'
 
 const t = require("server/i18n");
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 //const config = require("server/config");
-const Configurator = require("server/lib/Configurator").default;
+
 const Wallet = require('./Wallet-Model');
 const logger = require('logat');
 const shortUrl = require('shorturl');
@@ -30,24 +30,24 @@ const modelSchema = new Schema({
 
 modelSchema.methods.finish = async function () {
     if (this.finishTime) return;
-    if (this.wallet.balance < Math.ceil(Configurator.getNetwork(this.network).stopSum / Configurator.config.lotteryPercent)) return;
+    const App = new Configurator(this.network);
+    if (this.balance < App.getStopSum()) return;
 
     const players = [];
-    for (const tx of this.transactions) {
+    for (const tx of this.transactionsIn) {
         for (let i = 0; i < Math.ceil(tx.value); i++) {
             players.push(tx);
         }
     }
     this.winner = players[Math.floor(Math.random() * players.length)];
-    const Crypto = Configurator.getCryptoProcessor(this.network);
     const list = [
-        {to: this.winner.from, value: Configurator.getNetwork(this.network).stopSum},
-        {to: Configurator.getNetwork(this.network).ownerAddress, value: this.wallet.balance - Configurator.config.lotteryStopSum},
+        {to: this.winner.from, value: App.getPrize(), noCommission:true},
+        {to: App.getNetwork().ownerAddress, value: this.balance - App.getPrize()},
     ];
-    const commission = await Crypto.multiSendCommission(list, this.wallet.seed, Configurator.config.appName + '. Lottery winner');
-    list[0].value += commission / 2;
-    list[1].value -= commission;
-    const paymentTx = await Crypto.multiSendTx(list, this.wallet.seed, Configurator.config.appName + '. Lottery winner');
+    //const commission = await Crypto.multiSendCommission(list, this.wallet.seed, Configurator.config.appName + '. Lottery winner');
+    //list[0].value += commission / 2;
+    //list[1].value -= commission;
+    const paymentTx = await Crypto.multiSendTx(list, this.wallet.seed, App.config.appName + '. Lottery winner');
     if (paymentTx.error) {
         return logger.error("Can't send to winner", this.wallet.address, list, paymentTx);
     }
@@ -65,11 +65,17 @@ modelSchema.statics.getBank = async function () {
 
 modelSchema.methods.ticketsCount = async function () {
     let sum = 0;
-    for (const t of this.transactions) {
-        sum += t.value;
+    for (const t of this.transactionsIn) {
+        sum += t.ticketsCount;
     }
     return sum;
-}
+};
+
+modelSchema.virtual('transactionsIn')
+    .get(function () {
+        return this.transactions.filter(t => !t.fromUser);
+    });
+
 
 modelSchema.statics.getAll = async function () {
     try {
@@ -82,9 +88,19 @@ modelSchema.statics.getAll = async function () {
 };
 
 modelSchema.statics.population = [
-    {path: 'transactions', populate: 'wallet'},
-    'wallet'
+    {path:'transactions'},
+    {path:'wallet', populate: 'transactions'}
 ];
+
+modelSchema.virtual('balance')
+    .get(function () {
+        let sum = 0;
+        for(const tx of this.transactionsIn){
+            sum += tx.value;
+        };
+        return sum;
+    });
+
 
 modelSchema.statics.getCurrent = async function (network) {
     let lottery = await this.findOne({finishTime: 0, network})
@@ -122,29 +138,31 @@ modelSchema.virtual('startDate')
 
 
 modelSchema.methods.getLotteryLink = function () {
-    const Crypto = Configurator.getCryptoProcessor(this.network);
-    return (Crypto.getAddressLink(this.wallet.address));
+    const App = new Configurator(this.network);
+    return (App.crypto.getAddressLink(this.wallet.address));
 };
 
 modelSchema.methods.getWinnerLink = function () {
-    const Crypto = Configurator.getCryptoProcessor(this.network);
-    return (Crypto.getTransactionLink(this.paymentTx));
+    const App = new Configurator(this.network);
+    return (App.crypto.getTransactionLink(this.paymentTx));
 };
 
 modelSchema.methods.getInfo = async function () {
+    const App = new Configurator(this.network);
     const lotteryTickets = await this.ticketsCount();
-    return t('Crypto currency') + `: *${Configurator.getNetwork(this.network).name}*`
-        + '\n' + t('Referral program') + `: *${Configurator.getNetwork(this.network).referralPercent * 100}%*`
+    return t('Crypto currency') + `: *${App.getNetwork().name}*`
+        + '\n' + t('Referral program') + `: *${App.getNetwork().referralPercent * 100}%*`
         + '\n' + t('Lottery starts') + `: *${this.startDate}*`
-        + '\n' + t('The lottery will end when the balance of it wallet reaches') + `: *${Math.ceil(Configurator.getNetwork(this.network).stopSum / Configurator.config.lotteryPercent)}* ${this.coin}`
-        + '\n' + t('Current lottery balance') + `: *${this.wallet.balance.toFixed(2)}* ${this.coin}`
+        + '\n' + t('The lottery will end when the balance of it wallet reaches') + `: *${App.getStopSum( true)}* ${this.coin}`
+        + '\n' + t('Current lottery balance') + `: *${this.balance.toFixed(2)}* ${this.coin}`
         + '\n' + t('Lottery wallet') + `: ${this.getLotteryLink()}`
-        + '\n' + t('Total tickets') + `:* ${lotteryTickets}*`
+        + '\n' + t('Percent completion') + `:* ${lotteryTickets.toFixed(2)}%*`
 };
 
 modelSchema.virtual('coin')
     .get(function () {
-        return Configurator.getNetwork(this.network).coin
+        const App = new Configurator(this.network);
+        return App.getCoin()
     });
 
 modelSchema.virtual('sum')
@@ -156,11 +174,6 @@ modelSchema.virtual('sum')
         return sum;
     });
 
-
-modelSchema.virtual('readyToFinish')
-    .get(function () {
-        return this.sum >= this.stopLimit;
-    });
 
 module.exports = mongoose.model("Lottery", modelSchema);
 

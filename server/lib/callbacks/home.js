@@ -1,4 +1,4 @@
-import Configurator from "server/lib/Configurator";
+import {Configurator} from "server/lib/Configurator";
 
 const t = require("server/i18n");
 
@@ -11,12 +11,15 @@ export default {
         const message = t('Main menu');
         const menu = [
             [
-                {text: t('List of supported crypto currencies'), callback_data: 'info@cryptoList'},
+                {text: t('Active lotteries'), callback_data: 'lottery@listAll'},
 
             ],
             [
                 {text: t('Cabinet'), callback_data: 'cabinet@start'},
-                {text: t('Lotteries'), callback_data: 'lottery@start'},
+
+            ],
+            [
+                {text: t('Official group of bot'), callback_data: 'home@group'},
             ]
         ];
         return {message, menu, editMessage: false}
@@ -26,12 +29,25 @@ export default {
         const message = t('List of supported crypto currencies') +':\n'+ Configurator.getNetworks().map(n=>n.name).join(',\n');
         const menu = [
             [
-                {text: t('Main menu'), callback_data: 'info@start'},
+                {text: t('Main menu'), callback_data: 'home@start'},
 
             ]
         ];
         return {message, menu}
 
+    },
+
+    async group(){
+        let group = Configurator.getGroupName();
+        const message = t('Join official group') + `: https://t.me/${group}`;
+
+        const menu = [
+            [
+                {text: t('Main menu'), callback_data: 'home@start'},
+
+            ]
+        ];
+        return {message, menu, noMarkdown: true}
     }
 }
 

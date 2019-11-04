@@ -1,6 +1,6 @@
 import * as CallBacks from "server/lib/bot/callbacks"
 import Callback from "server/lib/Callback"
-import Configurator from "server/lib/Configurator"
+import {Configurator} from "server/lib/Configurator"
 
 
 const i18n = require("i18n");
@@ -13,18 +13,31 @@ const mongoose = require("server/lib/mongoose");
 export default {
     init: (bot) => {
 //Chat messages
+
+/*
+BotFather commands list:
+
+lotteries - List of active lotteries
+winners - List of winners
+paymentaddresses - List of your addresses for participating in each of the active lotteries
+*/
         const BotProcess = this.default;
-        bot.onText(/\/info/, async (msg, match) => {
+        bot.onText(/\/winners/, async (msg, match) => {
             const lottery = await mongoose.Lottery.getCurrent();
             const message = await lottery.getInfo()
             await bot.sendMessage(msg.chat.id, message, {parse_mode: "Markdown"});
         });
 
-        bot.onText(/\/myaddress/, async (msg, match) => {
+        bot.onText(/\/paymentaddresses/, async (msg, match) => {
             const user = await mongoose.User.getUser(msg.from);
-            i18n.setLocale(user.language_code);
-            const message = t('To buy tickets please send any amount of  BIP to') + `*${user.wallet.address}*`;
-            await bot.sendMessage(msg.from.id, message, {parse_mode: "Markdown"});
+            const response = await Callback.process('cabinet@lotteryAddresses', user);
+            await bot.sendMessage(msg.from.id, response.message, {parse_mode: "Markdown"});
+        });
+
+        bot.onText(/\/lotteries/, async (msg, match) => {
+            //const user = await mongoose.User.getUser(msg.from);
+            const response = await Callback.process('lottery@listAll');
+            await bot.sendMessage(msg.chat.id, response.message, {parse_mode: "Markdown"});
         });
 
         bot.onText(/\/start(.*)/, async (msg, match) => {
@@ -36,8 +49,8 @@ export default {
             }
             i18n.setLocale(user.language_code);
             const keyboard = [];
-            const firstLine = Configurator.config.languages.map(l => l.title);
-            firstLine.push('🏠');
+            const firstLine = Configurator.getConfig().languages.map(l => l.title);
+            //firstLine.push('🏠');
             keyboard.push(firstLine);
 
             const langOptions = {
@@ -52,6 +65,7 @@ export default {
 
 //Private messages
         bot.on('message', async (msg) => {
+            if(!msg.text) return;
             if(msg.text.match(/^\//)) return;
             if (msg.from.id !== msg.chat.id) return;
             const user = await mongoose.User.getUser(msg.from);
@@ -64,17 +78,18 @@ export default {
                     const response = await Callback.process('cabinet@start', user);
                     bot.sendMessage(sendToId, t('New address set for') + ` ${result.network.name}: *${msg.text}*`, response.menu);
                 } else {
-                    bot.sendMessage(sendToId, t('Wrong address for network') + ` *${result.network.name}*`, {parse_mode: "Markdown"});
+                    const response = await Callback.process('cabinet@errorSetAddress#'+result.network.name, user);
+                    bot.sendMessage(sendToId, response.message, response.menu);
                 }
 
             }
-            else if (Configurator.config.languages.map(l => l.title).indexOf(msg.text) > -1) {
+            else if (Configurator.getConfig().languages.map(l => l.title).indexOf(msg.text) > -1) {
 
-                const lang = Configurator.config.languages.find(l => l.title === msg.text);
+                const lang = Configurator.getConfig().languages.find(l => l.title === msg.text);
                 user.language_code = lang.language_code;
                 i18n.setLocale(user.language_code);
                 user.save();
-                const response = await Callback.process('info@start');
+                const response = await Callback.process('home@start');
                 bot.sendMessage(sendToId, response.message, response.menu);
 
             }
@@ -94,66 +109,6 @@ export default {
 
         });
 
-        /*
-                bot.on('callback_query', async function (callbackQuery) {
-                    console.log(callbackQuery)
-                    const action = callbackQuery.data;
-                    const msg = callbackQuery.message;
-                    const user = await mongoose.User.getUser(callbackQuery.from);
-                    i18n.setLocale(user.language_code);
-                    const message = await CallBacks[action].getMessage(user);
-                    //getMenu().parse_mode = "Markdown";
-                    await bot.sendMessage(msg.chat.id, message, CallBacks[action].drawMenu ? BotProcess.getMenu(user, action) : {});
-                });
-
-        */
-
-    },
-
-    getMenu() {
-        const menu = [];
-        const networksMenu = []
-        for (const network in Configurator.networks) {
-            networksMenu.push({text: Configurator.getNetwork(network).name, callback_data: `networks@${network}`})
-        }
-        menu.push(networksMenu);
-        return {
-            parse_mode: "Markdown",
-            reply_markup: {
-                //keyboard: config.languageMenu,
-                inline_keyboard: menu,
-                //one_time_keyboard: false,
-                //resize_keyboard: true,
-            },
-        };
-    },
-
-    getMenuBAK(user, parent) {
-        if (!parent) parent = 'root';
-        i18n.setLocale(user.language_code);
-        const levels = [...new Set(Object.keys(CallBacks).map(key => CallBacks[key].level))].sort();
-        const menu = {};
-        for (const level of levels) {
-            if (!menu[level]) menu[level] = [];
-            for (const callback_data of Object.keys(CallBacks)) {
-                if (CallBacks[callback_data].parent !== parent) continue;
-                if (CallBacks[callback_data].level === level) {
-                    menu[level].push({
-                        "text": CallBacks[callback_data].getLabel(),
-                        callback_data
-                    })
-                }
-            }
-        }
-        return {
-            parse_mode: "Markdown",
-            reply_markup: {
-                //keyboard: config.languageMenu,
-                inline_keyboard: Object.keys(menu).map(key => menu[key]),
-                //one_time_keyboard: false,
-                //resize_keyboard: true,
-            },
-        };
     },
 
 

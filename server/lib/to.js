@@ -4,7 +4,6 @@ module.exports=function to(promise) {
         return [null, data];
     })
         .catch(err =>{
-            logger.error(err.message)
             return [{error:500,message:err.message}]
         });
 };

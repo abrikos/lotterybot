@@ -50,5 +50,19 @@
 	"Enter new referral address for": "Enter new referral address for",
 	"Wrong address for network": "Wrong address for network",
 	"New address set": "New address set",
-	"Back": "Back"
+	"Back": "Back",
+	"Referrals": "Referrals",
+	"To participate in the lottery, send any amount to the address": "To participate in the lottery, send any amount to the address",
+	"Official group of bot": "Official group of bot",
+	"Join official group": "Join official group",
+	"Active lotteries": "Active lotteries",
+	"Your tickets": "Your tickets",
+	"Percent completion": "Percent completion",
+	"Your chances": "Your chances",
+	"Your current chances": "Your current chances",
+	"Cancel": "Cancel",
+	"Canceled": "Canceled",
+	"New address set for": "New address set for",
+	"Use this link to invite new members": "Use this link to invite new members",
+	"Do not forget to fill out the referral addresses where interest will be sent.": "Do not forget to fill out the referral addresses where interest will be sent."
 }
