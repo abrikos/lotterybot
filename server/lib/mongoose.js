@@ -19,5 +19,5 @@ module.exports = {
     Wallet: require('server/models/Wallet-Model'),
     Transaction: require('server/models/Transaction-Model'),
     Lottery: require('server/models/Lottery-Model'),
-    Ticket: require('server/models/Ticket-Model'),
+    Payment: require('server/models/Payment-Model'),
 };

@@ -12,12 +12,12 @@ export default {
         const lotteries = await mongoose.Lottery.find({finishTime: 0}).populate(mongoose.Lottery.population);
 
         for (const l of lotteries.filter(l => Configurator.getNetworks().map(n => n.key).indexOf(l.network) > -1)) {
-
-            message += `${await l.getInfo()}\n`;
-            if(args.user) {
-                const userWallet = args.user.wallets.find(w => w.network === l.network)
-                message += `${t('To participate in the lottery, send any amount to the address')} *${userWallet.address}*\n`
-                message += `${t('Your current chances')} *${userWallet.ticketsCount.toFixed(2)}%*\n--------------------\n\n`
+            const App = new Configurator(l.network);
+            message += `${App.lotteryInfo(l)}\n`;
+            if (args.user) {
+                const userWallet = args.user.wallets.find(w => w.network === l.network);
+                message += `\n${t('To participate in the lottery, send any amount to the address')} \`${userWallet.address}\`\n`
+                message += `${t('Your current chances')} *${(userWallet.getBalance(l._id) / (l.balance || 1) * 100).toFixed(0)}%*\n--------------------\n\n`
             }
         }
         const menu = [

@@ -21,30 +21,35 @@ lotteries - List of active lotteries
 winners - List of winners
 paymentaddresses - List of your addresses for participating in each of the active lotteries
 */
-        const BotProcess = this.default;
+        this.App = new Configurator('minter-mnt');
         bot.onText(/\/winners/, async (msg, match) => {
             const lottery = await mongoose.Lottery.getCurrent();
-            const message = await lottery.getInfo()
-            await bot.sendMessage(msg.chat.id, message, {parse_mode: "Markdown"});
+            await bot.sendMessage(msg.chat.id, lottery.info, {parse_mode: "Markdown"});
         });
 
         bot.onText(/\/paymentaddresses/, async (msg, match) => {
-            const user = await mongoose.User.getUser(msg.from);
+            const user = await this.App.getUser(msg.from);
             const response = await Callback.process('cabinet@lotteryAddresses', user);
             await bot.sendMessage(msg.from.id, response.message, {parse_mode: "Markdown"});
         });
 
         bot.onText(/\/lotteries/, async (msg, match) => {
-            //const user = await mongoose.User.getUser(msg.from);
+            //const user = await this.App.getUser(msg.from);
             const response = await Callback.process('lottery@listAll');
             await bot.sendMessage(msg.chat.id, response.message, {parse_mode: "Markdown"});
         });
 
+        bot.onText(/\/list/, async (msg, match) => {
+            const user = await this.App.getUser(msg.from);
+            const response = await Callback.process('lottery@listAll', user);
+            await bot.sendMessage(msg.from.id, response.message, {parse_mode: "Markdown"});
+        });
+
         bot.onText(/\/start(.*)/, async (msg, match) => {
-            const user = await mongoose.User.getUser(msg.from);
+            const user = await this.App.getUser(msg.from);
             i18n.setLocale(user.language_code);
             if (mongoose.Types.ObjectId.isValid(match[1].trim()) && !user.parent) {
-                user.parent = await mongoose.User.findById(match[1]);
+                user.parent = await mongoose.User.findById(match[1].trim());
                 await user.save();
             }
             i18n.setLocale(user.language_code);
@@ -68,12 +73,13 @@ paymentaddresses - List of your addresses for participating in each of the activ
             if(!msg.text) return;
             if(msg.text.match(/^\//)) return;
             if (msg.from.id !== msg.chat.id) return;
-            const user = await mongoose.User.getUser(msg.from);
+            const user = await this.App.getUser(msg.from);
             i18n.setLocale(user.language_code);
             const sendToId = msg.from.id;
 
             if (user.waitForReferralAddress) {
-                const result = user.setReferralAddress(msg.text)
+                const app = new Configurator(user.waitForReferralAddress)
+                const result = this.App.setReferralAddress(user, msg.text)
                 if (!result.error) {
                     const response = await Callback.process('cabinet@start', user);
                     bot.sendMessage(sendToId, t('New address set for') + ` ${result.network.name}: *${msg.text}*`, response.menu);
@@ -96,7 +102,7 @@ paymentaddresses - List of your addresses for participating in each of the activ
         });
 
         bot.on('callback_query', async function (callbackQuery) {
-            const user = await mongoose.User.getUser(callbackQuery.from);
+            const user = await this.App.getUser(callbackQuery.from);
             i18n.setLocale(user.language_code);
             const msg = callbackQuery.message;
             const response = await Callback.process(callbackQuery.data, user);

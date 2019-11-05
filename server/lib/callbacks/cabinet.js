@@ -65,14 +65,17 @@ export default {
     },
 
     async referrals(args) {
-        const message = '';
+        for(const ref of args.user.referrals){
+            console.log(ref)
+        }
+        const message = 'REF';
         const menu = [];
         return {message, menu, replacePrev: false}
     },
 
     async reflink(args) {
         const message = t('Use this link to invite new members')
-            + `:\n ${args.user.referralLink}\n `
+            + `:\n https://telegram.me/${Configurator.getBotName()}?start=${args.user._id};\n `
         +t('Do not forget to fill out the referral addresses where interest will be sent.');
         const menu = [
             [{text: t('My referral addresses'), callback_data: 'cabinet@addresses'}],

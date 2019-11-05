@@ -5,113 +5,110 @@ const CronJob = require('cron').CronJob;
 const mongoose = require('./mongoose');
 
 
-//mongoose.Transaction.find({hash:'Mtcbdd8665ef465de63a62d43b30c8f0051bdf1aa1935099415558fa169b05c01a'})    .then(console.log)
 //mongoose.Wallet.findById('5dbfe523083a7b02d23426c0').populate(mongoose.Wallet.population).then(wallet=>{wallet.transactions = []; console.log(wallet)})
-
+//mongoose.Transaction.deleteMany({}, console.log);mongoose.Payment.deleteMany({}, console.log);mongoose.Payment.collection.dropAllIndexes(console.log)
 
 export default {
     bot: null,
     init(bot) {
         if (0) {
-            mongoose.User.deleteMany({}, console.log);
-            mongoose.Wallet.deleteMany({}, console.log);
+            //mongoose.User.deleteMany({}, console.log);
+            mongoose.Wallet.deleteMany({}, () => {
+                mongoose.User.find()
+                    .populate('wallets')
+                    .then(users => {
+                        for (const user of users) {
+                            for (const network of Configurator.getKeys()) {
+                                if (!user.getWallet(network)) {
+                                    const App = new Configurator(network);
+                                    App.createWallet(user)
+                                }
+                            }
+                        }
+                    })
+            });
             mongoose.Lottery.deleteMany({}, console.log);
             mongoose.Transaction.deleteMany({}, console.log);
+            mongoose.Payment.deleteMany({}, console.log);
             return;
         }
 
         this.bot = bot;
         const jobs = {};
+
+        for(const network of Configurator.getKeys()){
+            const App = new Configurator(network);
+            mongoose.Lottery.findOne({finishTime:0, network})
+                .then(lottery =>{
+                    if(!lottery) App.lotteryCreate();
+                });
+        }
+
         jobs.transactions = new CronJob('*/10 * * * * *', async () => {
-            for (const network of Configurator.getKeys()) {
-                const App = new Configurator(network);
-                let lottery = await mongoose.Lottery.findOne({finishTime: 0, network})
-                    .populate(mongoose.Lottery.population);
-                mongoose.Wallet.find({user: {$ne: null}, network})
-                    .populate(mongoose.Wallet.population)
-                    .then(wallets => {
-                        for (const wallet of wallets) {
+            const wallets = await mongoose.Wallet.find()
+                .populate(mongoose.Wallet.population);
+            for (const wallet of wallets) {
+                const App = new Configurator(wallet.network);
+                const transactions = await App.crypto.loadTransactions(wallet.address);
 
-                            App.crypto.loadTransactions(wallet.address)
-                                .then(transactions => {
-                                    for (const transaction of transactions.filter(tx=>tx.to !== App.getOwnerAddress())) {
-                                        mongoose.Transaction.findOne({hash: transaction.hash})
-                                            .then(txFound => {
-                                                if (!txFound) {
-                                                    if (transaction.to !== wallet.address) {
-
-                                                        lottery.getInfo()
-                                                            .then(lotteryInfo => {
-                                                                const message = `Lottery payed: *${transaction.value}* ${transaction.coin}\n\n${lotteryInfo}`;
-                                                                logger.info(message)
-                                                                //this.bot.sendMessage(App.getGroupId(), message, {parse_mode: "Markdown"});
-                                                            })
-                                                    } else {
-                                                        transaction.fromUser = true;
-                                                        const found = wallet.user.addresses.find(a => a.network === network)
-                                                        if (!found) {
-                                                            wallet.user.addresses.push({address:transaction.from, network})
-                                                            wallet.user.save()
-                                                        }
-
-                                                    }
-                                                    transaction.wallet = wallet;
-                                                    transaction.lottery = lottery;
-                                                    mongoose.Transaction.create(transaction).catch(console.error);
-                                                }
-                                            })
-                                    }
-                                });
-                            /*if(wallet.balance)
-                            wallet.moveToLottery(lottery)
-                                .catch(console.error);*/
-                        }
-                    })
+                for (const transaction of transactions) {
+                    const txFound = await mongoose.Transaction.findOne({hash: transaction.hash});
+                    if (txFound) continue;
+                    transaction.wallet = wallet;
+                    transaction.lottery = wallet.currentLottery;
+                    transaction.coin = App.getCoin();
+                    await mongoose.Transaction.create(transaction);
+                }
 
             }
+
         }, null, true, 'America/Los_Angeles');
 
-        jobs.moveToLottery = new CronJob('*/10 * * * * *', async () => {
-            //mongoose.Wallet.setBalances();
-            mongoose.Transaction.find({fromUser: true, fundsMoved: false})
-                .populate([
-                    {
-                        path: 'lottery',
-                        populate: [
-                            {
-                                path: 'wallet',
 
-                            }
-                        ]
-                    },
-                    {
-                        path: 'wallet',
-                        populate: [
-                            {
-                                path: 'user',
-                                populate: 'parent'
-                            }
-                        ]
-                    }
-                ])
-                .then(transactions => {
-                    for (const transaction of transactions) {
-                        transaction.moveToLottery()
-                        //.catch(console.error)
-                    }
-                })
+        jobs.paymentsFromUserWallet = new CronJob('*/10 * * * * *', async () => {
+            const transactions = await mongoose.Transaction.find({paymentProcessed: null})
+                .populate(mongoose.Transaction.population);
+
+            for (const transaction of transactions) {
+                const App = new Configurator(transaction.network)
+                if (App.payReferralParent(transaction) && App.moveToLottery(transaction)) {
+                    transaction.paymentProcessed = true;
+                    transaction.save();
+                }
+                //.catch(console.error)
+            }
+
         }, null, true, 'America/Los_Angeles');
+
+
+        jobs.executePayments = new CronJob('*/30 * * * * *', async () => {
+            const payments = await mongoose.Payment.find({payedTx:null})
+                .populate(mongoose.Payment.population);
+            for(const payment of payments){
+                const App = new Configurator(payment.lottery.network);
+                const paymentTx = await App.paymentExecute(payment);
+                if(!paymentTx) continue;
+                if (payment.type==='winner') {
+                    const message = `${App.getNetwork().name} lottery finished. Prize: *${payment.value}* ${App.getCoin()}\nTX: ${paymentTx.hash}`
+                    logger.info(message)
+                    //this.bot.sendMessage(Configurator.getGroupId(), message, {parse_mode: "Markdown"});
+                }
+                if(payment.type==='lottery'){
+                    const message = `Lottery payed: *${payment.value}* ${App.getCoin()}\n\n${App.lotteryInfo(payment.lottery)}`;
+                    logger.info(message)
+                    //this.bot.sendMessage(Configurator.getGroupId(), message, {parse_mode: "Markdown"});
+                }
+            }
+
+        }, null, true, 'America/Los_Angeles');
+
 
         jobs.lotteryFinish = new CronJob('*/10 * * * * *', async () => {
-            //mongoose.Wallet.setBalances();
-            for (const network of Configurator.getKeys()) {
-                const App = new Configurator(network);
-                const lottery = await mongoose.Lottery.getCurrent(network);
-                const winnerTx = await lottery.finish();
-                if (winnerTx) {
-                    logger.info(winnerTx);
-                    this.bot.sendMessage(App.getGroupId(), `${network} lottery finished. Prize: *${winnerTx.value}* ${App.getCoin()}\nTX: ${winnerTx.hash}`, {parse_mode: "Markdown"});
-                }
+            const lotteries = await mongoose.Lottery.find({finishTime: 0})
+                .populate(mongoose.Lottery.population);
+            for (const lottery of lotteries) {
+                const App = new Configurator(lottery.network);
+                await App.lotteryFinish(lottery) ;
             }
         }, null, true, 'America/Los_Angeles');
 
@@ -121,17 +118,6 @@ export default {
 
         jobs.userAddWallets = new CronJob('0 0 * * * *', async function () {
             console.log('Hour  job');
-            mongoose.User.find()
-                .populate('wallets')
-                .then(users => {
-                    for (const user of users) {
-                        for (const network of Configurator.getKeys()) {
-                            if (!user.getWallet(network)) {
-                                mongoose.Wallet.createNew(network, user);
-                            }
-                        }
-                    }
-                })
         }, null, true, 'America/Los_Angeles');
 
         for (const key of Object.keys(jobs)) {

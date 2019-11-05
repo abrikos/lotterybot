@@ -1,8 +1,9 @@
 import config from 'server/config';
 import MinterWallet from "server/lib/networks/Minter";
 import Ethereum from "server/lib/networks/Ethereum";
-
+const t = require("server/i18n");
 const logger = require('logat');
+const mongoose = require('./mongoose');
 
 /*
 const pk = '0x25C8E249904F8D1999F84855124E658544EBE4646B6D38C3FFA3C407450E578B';
@@ -87,4 +88,128 @@ export class Configurator {
     static getBotName() {
         return config.botName;
     }
+
+    async lotteryFinish(lottery) {
+        if (lottery.finishTime) return;
+        if (lottery.balance < this.getStopSum()) return;
+
+        const players = [];
+        for (const tx of lottery.transactionsFromUser) {
+            for (let i = 0; i < Math.ceil(tx.value); i++) {
+                players.push(tx);
+            }
+        }
+        lottery.winner = players[Math.floor(Math.random() * players.length)];
+
+        const args = {to: lottery.winner.from, from: lottery.wallet.address, value: this.getPrize(), lottery: lottery, type: 'winner', starterTx: lottery.winner.hash};
+        mongoose.Payment.create(args);
+        const args2 = {to: this.getNetwork().ownerAddress, from: lottery.wallet.address, value: lottery.balance - this.getPrize(), lottery: lottery, type: 'owner', starterTx: lottery.winner.hash};
+        mongoose.Payment.create(args2);
+        lottery.finishTime = new Date().valueOf();
+        await lottery.save();
+        await this.lotteryCreate();
+
+    }
+
+    async lotteryCreate() {
+        const wallet = await this.createWallet();
+        return await mongoose.Lottery.create({finishTime: 0, wallet, network: wallet.network, coin: this.getCoin()});
+    }
+
+    async lotteryCurrent() {
+        let lottery = await mongoose.Lottery.findOne({finishTime: 0, network: this.network.key})
+            .populate(mongoose.Lottery.population);
+        if (!lottery) {
+            lottery = await this.lotteryCreate();
+        }
+        return lottery;
+    }
+
+    payReferralParent(transaction) {
+        if (transaction.payments.find(p => p.type === 'referral')) return true;
+        const address = transaction.referralAddress;
+        if (!address) return true;
+        const App = new Configurator(transaction.network);
+
+        const referral = transaction.value * App.getNetwork().referralPercent;
+        const args = {to: address, from: transaction.walletTo.address, value: referral, message: App.config.appName + '. Referral payment', lottery: transaction.lottery, starterTx: transaction.hash, type: 'referral', coin: this.getCoin()}
+        mongoose.Payment.create(args);
+        return true;
+    };
+
+    moveToLottery(transaction) {
+        if (!transaction.walletTo || transaction.walletFrom) return true;
+        if (transaction.payments.find(p => p.type === 'lottery')) return true;
+        const App = new Configurator(transaction.network);
+        let referral = 0;
+        if (transaction.referralAddress) {
+            referral = transaction.value * App.getNetwork().referralPercent;
+        }
+        const args = {to: transaction.lottery.wallet.address, from: transaction.walletTo.address, value: transaction.value - referral, lottery: transaction.lottery, starterTx: transaction.hash, type: 'lottery', coin: this.getCoin()}
+        mongoose.Payment.create(args)
+        return true;
+    };
+
+    async getUser(from) {
+        let user = await mongoose.User.findOne({id: from.id})
+            .populate(mongoose.User.population);
+        if (!user) {
+            user = new mongoose.User(from);
+            await user.save();
+            for (const network of this.networks.map(n=>n.key)) {
+                await this.createWallet(user);
+            }
+        }
+        user = await user.populate(mongoose.User.population).execPopulate();
+        return user;
+    };
+
+    async createWallet(user) {
+        const wallet = new mongoose.Wallet(await this.crypto.generateWallet());
+        wallet.network = this.network.key;
+        wallet.user = user;
+        wallet.coin = this.getCoin();
+        await wallet.save();
+        //logger.info('Wallet created', network)
+        return wallet;
+    };
+
+    setReferralAddress(user, address) {
+        const network = this.getNetwork();
+        if (!network) return {error: 'WRONG NETWORK:' + user.waitForReferralAddress};
+        const regexp = new RegExp(network.walletAddressRegexp);
+        if (!address.match(regexp)) return {error: 'Wrong address', network}
+        const found = this.addresses.find(a => a.network === network.key)
+        if (found) {
+            found.address = address;
+        } else {
+            user.addresses.push({address, network: network.key})
+        }
+        user.waitForReferralAddress = null;
+        user.save();
+    };
+
+    async paymentExecute(payment) {
+        const args = {address: payment.to, pk: payment.walletFrom.seed, amount: payment.value, message: payment.message, noCommission: payment.type === 'winner'};
+        const tx = await this.crypto.send(args);
+        if (tx.error) {
+            logger.error("Can't move from user wallet to lottery wallet", args, tx);
+        } else {
+            payment.payedTx = tx.hash;
+            payment.save();
+        }
+        return tx;
+    };
+
+    lotteryInfo(lottery) {
+        return t('Crypto currency') + `: *${this.getNetwork().name}*`
+            + '\n' + t('Referral program') + `: *${this.getNetwork().referralPercent * 100}%*`
+            + '\n' + t('Lottery starts') + `: *${lottery.date}*`
+            + '\n' + t('The lottery will end when the balance of it wallet reaches') + `: *${this.getStopSum(true)}* ${lottery.coin}`
+            + '\n' + t('Current lottery balance') + `: *${lottery.balance.toFixed(2)}* ${lottery.coin}`
+            + '\n' + t('Lottery wallet') + `: ${this.crypto.getAddressLink(lottery.wallet.address)}`
+            + '\n' + t('Percent completion') + `: *${(lottery.balance / this.getStopSum() * 100).toFixed(2)}%*`
+    };
+
+
 }

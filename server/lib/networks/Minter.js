@@ -28,17 +28,18 @@ export default {
         return {list};
     },
 
-    async multiSendTx(list, mnemonic, message) {
+    async multiSendTx({list, mnemonic, message}) {
         return await this.postTx(this.multiSendTxList(list), mnemonic, message);
     },
 
-    async send(address, coinSymbol, mnemonic, amount, message) {
+    async send({address, pk, amount, message, noCommission}) {
+        logger.info(address, amount, message)
         const txProto = {
             address,
-            coinSymbol,
+            coinSymbol: this.network.coin,
             amount,
         };
-        return await this.postTx(txProto, mnemonic, message);
+        return await this.postTx({txProto, pk, message, noCommission});
     },
 
     async getTxSigned(txProto, mnemonic, message) {
@@ -61,28 +62,27 @@ export default {
         return prepareSignedTx(txParams);
     },
 
-    async postTx(txProto, mnemonic, message) {
+    async postTx({txProto, pk, message, noCommission}) {
         const isMultisend = !!txProto.list;
-        const txSigned = await this.getTxSigned(txProto, mnemonic, message);
+        const txSigned = await this.getTxSigned(txProto, pk, message);
         const minterSDK = new Minter({chainId: this.network.chainId, apiType: 'gate', baseURL: 'https://gate.minter.network/api/v1/'});
         //logger.info(txProto.list)
         try {
             const commission = await minterSDK.estimateTxCommission({transaction: txSigned.serialize().toString('hex')}) / 1000000000000000000 * 1.1;
-
+logger.info(commission)
             if (isMultisend) {
-                for (const l of txProto.list.filter(l=>!l.noCommission)) {
-                    l.value -= commission / txProto.list.filter(l=>!l.noCommission).length;
+                for (const l of txProto.list.filter(l => !l.noCommission)) {
+                    l.value -= commission / txProto.list.filter(l => !l.noCommission).length;
                 }
-            } else {
+            } else if(!noCommission){
                 txProto.amount -= commission
             }
-            console.log('Commisiion', commission, txProto.list)
             const txParamsCommission = isMultisend ? new MultisendTxParams(txProto) : new SendTxParams(txProto);
             const hash = await minterSDK.postTx(txParamsCommission);
-            return {hash}
+            return {hash};
 
         } catch (error) {
-            //console.log(error)
+            //console.error('MINTER postTX',error)
             if (!error.response) {
                 return {error};
             }
@@ -124,16 +124,16 @@ export default {
             tx.to = tx.data.to;
             tx.coin = tx.data.coin;
             tx.value = tx.data.value * 1;
-        } else if(tx.data.list && tx.data.list.length === 1){
+        } else if (tx.data.list && tx.data.list.length === 1) {
             tx.to = tx.data.list[0].to;
             tx.coin = tx.data.list[0].coin;
             tx.value = tx.data.list[0].value;
-        } else if(tx.data.list && tx.data.list.length === 2){
+        } else if (tx.data.list && tx.data.list.length === 2) {
             tx.to = tx.data.list[1].to;
             tx.coin = tx.data.list[1].coin;
             tx.value = tx.data.list[1].value;
-        }else{
-            tx.error ='UNSUPPORTED MULTISEND'
+        } else {
+            tx.error = 'UNSUPPORTED MULTISEND'
         }
 
         if (tx.coin !== this.network.coin) {
@@ -161,7 +161,6 @@ export default {
 
     async getTransaction(hash) {
         const tx = await this.get('/transactions/' + hash);
-        console.log(tx)
         return this.adaptTx(tx);
     },
 
