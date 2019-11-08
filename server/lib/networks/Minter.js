@@ -12,6 +12,7 @@ export default {
 
     init(network) {
         this.network = network;
+        this.sdk = new Minter({chainId: this.network.chainId, apiType: 'node', baseURL: this.network.apiUrl});
         return this
     },
 
@@ -32,64 +33,73 @@ export default {
         return await this.postTx(this.multiSendTxList(list), mnemonic, message);
     },
 
-    async send({address, pk, amount, message, noCommission}) {
-        logger.info(address, amount, message)
-        const txProto = {
-            address,
-            coinSymbol: this.network.coin,
-            amount,
-        };
-        return await this.postTx({txProto, pk, message, noCommission});
+
+    async getCommission(args) {
+        const txProto = await this.getTxProto(args)
+        const txSigned = this.getTxSigned(txProto);
+        const res = await this.getApi('estimate_tx_commission?tx=0x' + txSigned.serialize().toString('hex'));
+        return res.result.commission / 1000000000000000000 * 1.1
     },
 
-    async getTxSigned(txProto, mnemonic, message) {
-        const wallet = minter.walletFromMnemonic(mnemonic);
-        const minterSDK = new Minter({apiType: 'node', baseURL: this.network.apiUrl});
-        const [error, nonce] = await to(minterSDK.getNonce(wallet.getAddressString()));
-        txProto.nonce = nonce;
-        txProto.privateKey = wallet.getPrivateKey();
-        txProto.chainId = this.network.chainId;
-        txProto.gasPrice = 1;
-        txProto.message = message;
-        txProto.feeCoinSymbol = this.network.coin;
+    async getNonce(address) {
+        const response = await this.get(this.network.apiUrl, `address?address=${address}`);
+        return response.result.transaction_count * 1 + 1;
+    },
 
-        if (error) {
-            logger.error(error);
-            return {error}
+    async getTxProto({address, pk, amount, message}) {
+        const wallet = minter.walletFromMnemonic(pk);
+        return {
+            privateKey: wallet.getPrivateKeyString(),
+            nonce: await this.getNonce(wallet.getAddressString()),
+            chainId: this.network.chainId,
+            address,
+            amount,
+            coinSymbol: this.network.coin,
+            feeCoinSymbol: this.network.coin,
+            gasPrice: 1,
+            message: typeof message === 'object' ? JSON.stringify(message) : message,
         }
-        const isMultisend = !!txProto.list;
-        const txParams = isMultisend ? new MultisendTxParams(txProto) : new SendTxParams(txProto);
+    },
+
+    getTxSigned(txProto) {
+        const txParams = new SendTxParams(txProto);
         return prepareSignedTx(txParams);
     },
 
-    async postTx({txProto, pk, message, noCommission}) {
-        const isMultisend = !!txProto.list;
-        const txSigned = await this.getTxSigned(txProto, pk, message);
-        const minterSDK = new Minter({chainId: this.network.chainId, apiType: 'gate', baseURL: 'https://gate.minter.network/api/v1/'});
-        //logger.info(txProto.list)
-        try {
-            const commission = await minterSDK.estimateTxCommission({transaction: txSigned.serialize().toString('hex')}) / 1000000000000000000 * 1.1;
-logger.info(commission)
-            if (isMultisend) {
-                for (const l of txProto.list.filter(l => !l.noCommission)) {
-                    l.value -= commission / txProto.list.filter(l => !l.noCommission).length;
-                }
-            } else if(!noCommission){
-                txProto.amount -= commission
-            }
-            const txParamsCommission = isMultisend ? new MultisendTxParams(txProto) : new SendTxParams(txProto);
-            const hash = await minterSDK.postTx(txParamsCommission);
-            return {hash};
+    async send({address, pk, amount, message, noCommission}) {
+        const args = {address, pk, amount, message, noCommission};
 
+        const commission = await this.getCommission(args);
+        const txProto = await this.getTxProto(args)
+        if (!args.noCommission) {
+            txProto.amount -= commission
+        }
+        /*const txParams = new SendTxParams(txProto);
+        const res =  await this.sdk.postTx(txParams);
+        logger.info(res)*/
+
+        const txSigned = this.getTxSigned(txProto);
+        const res = await this.getApi('send_transaction?tx=0x' + txSigned.serialize().toString('hex'));
+        if (res.error) {
+            let code;
+            if (res.data.error.tx_result && res.data.error.tx_result.code === 107) code = 'Insufficient funds';
+            return {error: res.data, code};
+        }
+        return {hash: 'Mt' + res.result.hash};
+
+    },
+    async get(url, action) {
+        try {
+            const res = await axios(`${url}${action}`);
+            return res.data;
         } catch (error) {
-            //console.error('MINTER postTX',error)
-            if (!error.response) {
-                return {error};
-            }
-            if (error.response.data.error && error.response.data.error.tx_result && error.response.data.error.tx_result.code === 107) return {error: 107, ...error.response.data.error.tx_result};
-            return {error: error.response.data}
+            if (error.response)
+                return {error: error.response.status, data: error.response.data};
+            else
+                return {error: 'Server not response', data: 'Can not connect to server'}
         }
     },
+
 
     async getBalance(address) {
         const [error, res] = await to(axios(`${this.network.apiUrl}/address?address=${address}`));
@@ -103,7 +113,7 @@ logger.info(commission)
     async loadTransactions(address) {
         //this.transactions = await this.getTransactionsList().catch(e  console.log(e));
         if (!this.checkAddress(address)) return [];
-        const list = await this.get(`/addresses/${address}/transactions`);
+        const list = await this.getExplorer(`/addresses/${address}/transactions`);
         if (list.error) return [];
         return this.adaptTransactions(list);
     },
@@ -156,24 +166,23 @@ logger.info(commission)
     },
 
     adaptTransactions(txs) {
+        if (typeof txs !== 'object') return [];
         return txs.map(tx => this.adaptTx(tx)).filter(tx => tx && !tx.error && tx.message !== 'this is a gift')
     },
 
     async getTransaction(hash) {
-        const tx = await this.get('/transactions/' + hash);
+        const tx = await this.getExplorer('/transactions/' + hash);
         return this.adaptTx(tx);
     },
 
-    async get(action) {
-        try {
-            const res = await axios(`${this.network.explorerApiUrl}${action}`);
-            return res.data.data
-        } catch (e) {
-            if (!e.response) {
-                return {error: e.message};
-            }
-            return {error: e.response.status, url: `${this.network.explorerApiUrl}${action}`}
-        }
+    async getExplorer(action) {
+        const res = await this.get(this.network.explorerApiUrl, action)
+        return res.data;
+    },
+
+    async getApi(action) {
+        //logger.info(this.network.apiUrl + action)
+        return await this.get(this.network.apiUrl, action)
     },
 
     getAddressLink(address) {

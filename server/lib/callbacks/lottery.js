@@ -17,7 +17,7 @@ export default {
             if (args.user) {
                 const userWallet = args.user.wallets.find(w => w.network === l.network);
                 message += `\n${t('To participate in the lottery, send any amount to the address')} \`${userWallet.address}\`\n`
-                message += `${t('Your current chances')} *${(userWallet.getBalance(l._id) / (l.balance || 1) * 100).toFixed(0)}%*\n--------------------\n\n`
+                message += `${t('Your current chances')} *: ${(userWallet.getBalance(l._id) / (l.balance || 1) * 100).toFixed(0)}%*\n--------------------\n\n`
             }
         }
         const menu = [

@@ -5,11 +5,12 @@ const Schema = mongoose.Schema;
 
 
 const modelSchema = new Schema({
-        value: {type: Number, required: true},
+        amount: {type: Number, required: true},
         lottery: {type: mongoose.Schema.Types.ObjectId, ref: 'Lottery', required: [true, 'Lottery required']},
         from: {type: String, required: true},
         to: {type: String, required: true},
-        message: {type: String},
+        coin: {type: String, required: true},
+        message: {type: Object},
         starterTx: {type: String, required: true},
         payedTx: {type: String},
         noCommission: {type: Boolean},
@@ -36,7 +37,8 @@ modelSchema.statics.population = [
     },
     {path: 'walletFrom'},
     {path: 'walletTo'},
-    {path: 'transaction'},
+    {path: 'transactionPay'},
+    {path: 'transactionStart'},
 ];
 
 
@@ -60,9 +62,17 @@ modelSchema.virtual('walletTo', {
     justOne: true // set true for one-to-one relationship
 });
 
-modelSchema.virtual('transaction', {
+modelSchema.virtual('transactionPay', {
     ref: 'Transaction',
     localField: 'payedTx',
+    foreignField: 'hash',
+    //options:{match:{paymentTx:null}},
+    justOne: true // set true for one-to-one relationship
+});
+
+modelSchema.virtual('transactionStart', {
+    ref: 'Transaction',
+    localField: 'starterTx',
     foreignField: 'hash',
     //options:{match:{paymentTx:null}},
     justOne: true // set true for one-to-one relationship

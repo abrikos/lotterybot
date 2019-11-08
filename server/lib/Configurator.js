@@ -1,6 +1,7 @@
 import config from 'server/config';
 import MinterWallet from "server/lib/networks/Minter";
 import Ethereum from "server/lib/networks/Ethereum";
+
 const t = require("server/i18n");
 const logger = require('logat');
 const mongoose = require('./mongoose');
@@ -100,11 +101,34 @@ export class Configurator {
             }
         }
         lottery.winner = players[Math.floor(Math.random() * players.length)];
+        logger.info('WINNER', lottery.winner.from)
+        const argsWinner = {
+            to: lottery.winner.from,
+            from: lottery.wallet.address,
+            amount: this.getPrize(),
+            lottery: lottery,
+            type: 'winner',
+            starterTx: lottery.winner.hash,
+            message: {msg: this.config.appName + '. Winner', starterTx: lottery.winner.hash},
+            coin: lottery.coin
+        };
+        mongoose.Payment.create(argsWinner);
 
-        const args = {to: lottery.winner.from, from: lottery.wallet.address, value: this.getPrize(), lottery: lottery, type: 'winner', starterTx: lottery.winner.hash};
-        mongoose.Payment.create(args);
-        const args2 = {to: this.getNetwork().ownerAddress, from: lottery.wallet.address, value: lottery.balance - this.getPrize(), lottery: lottery, type: 'owner', starterTx: lottery.winner.hash};
-        mongoose.Payment.create(args2);
+        const address = this.getNetwork().ownerAddress;
+
+        //Reduce by commission of winner transaction
+        const commission = await this.crypto.getCommission({address, pk: lottery.wallet.seed, amount: argsWinner.amount, message: argsWinner.message});
+        let amount = lottery.balance - this.getPrize() - commission;
+        const argsOwner = {
+            to: address,
+            from: lottery.wallet.address,
+            amount,
+            lottery: lottery,
+            type: 'owner',
+            starterTx: lottery.winner.hash,
+            coin: lottery.coin
+        };
+        mongoose.Payment.create(argsOwner);
         lottery.finishTime = new Date().valueOf();
         await lottery.save();
         await this.lotteryCreate();
@@ -132,9 +156,25 @@ export class Configurator {
         const App = new Configurator(transaction.network);
 
         const referral = transaction.value * App.getNetwork().referralPercent;
-        const args = {to: address, from: transaction.walletTo.address, value: referral, message: App.config.appName + '. Referral payment', lottery: transaction.lottery, starterTx: transaction.hash, type: 'referral', coin: this.getCoin()}
-        mongoose.Payment.create(args);
-        return true;
+        const args = {
+            to: address,
+            from: transaction.walletTo.address,
+            amount: referral,
+            message: App.config.appName + '. Referral payment',
+            lottery: transaction.lottery,
+            starterTx: transaction.hash,
+            type: 'referral',
+            coin: this.getCoin()
+        }
+        try {
+            mongoose.Payment.create(args);
+            return true;
+        } catch (e) {
+            logger.error(e);
+            return false;
+        }
+
+
     };
 
     moveToLottery(transaction) {
@@ -145,10 +185,47 @@ export class Configurator {
         if (transaction.referralAddress) {
             referral = transaction.value * App.getNetwork().referralPercent;
         }
-        const args = {to: transaction.lottery.wallet.address, from: transaction.walletTo.address, value: transaction.value - referral, lottery: transaction.lottery, starterTx: transaction.hash, type: 'lottery', coin: this.getCoin()}
-        mongoose.Payment.create(args)
-        return true;
+        const args = {
+            to: transaction.lottery.wallet.address,
+            from: transaction.walletTo.address,
+            amount: transaction.value - referral,
+            lottery: transaction.lottery,
+            starterTx: transaction.hash,
+            type: 'lottery',
+            message: {starterTx: transaction.hash},
+            coin: this.getCoin()
+        };
+        try {
+            mongoose.Payment.create(args);
+            return true;
+        } catch (e) {
+            logger.error(e);
+            return false;
+        }
     };
+
+    async paymentExecute(payment) {
+
+        const noCommission = payment.type === 'winner';
+        let amount = payment.amount;
+        const args = {
+            address: payment.to,
+            pk: payment.walletFrom.seed,
+            amount,
+            message: payment.message,
+            noCommission
+        };
+        logger.info('TRY EXECUTE PAYMENT', args)
+        const tx = await this.crypto.send(args);
+        if (tx.error) {
+            if(tx.code !== 'Insufficient funds') logger.error("Can't execute payment", args, tx);
+        }else{
+            payment.payedTx = tx.hash;
+            await payment.save();
+        }
+        return tx;
+    };
+
 
     async getUser(from) {
         let user = await mongoose.User.findOne({id: from.id})
@@ -156,7 +233,7 @@ export class Configurator {
         if (!user) {
             user = new mongoose.User(from);
             await user.save();
-            for (const network of this.networks.map(n=>n.key)) {
+            for (const network of this.networks.map(n => n.key)) {
                 await this.createWallet(user);
             }
         }
@@ -189,17 +266,6 @@ export class Configurator {
         user.save();
     };
 
-    async paymentExecute(payment) {
-        const args = {address: payment.to, pk: payment.walletFrom.seed, amount: payment.value, message: payment.message, noCommission: payment.type === 'winner'};
-        const tx = await this.crypto.send(args);
-        if (tx.error) {
-            logger.error("Can't move from user wallet to lottery wallet", args, tx);
-        } else {
-            payment.payedTx = tx.hash;
-            payment.save();
-        }
-        return tx;
-    };
 
     lotteryInfo(lottery) {
         return t('Crypto currency') + `: *${this.getNetwork().name}*`

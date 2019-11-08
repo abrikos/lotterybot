@@ -64,7 +64,10 @@ paymentaddresses - List of your addresses for participating in each of the activ
                     resize_keyboard: true,
                 },
             };
-            bot.sendMessage(msg.from.id, 'Choose language', langOptions);
+
+            const response = await Callback.process('cabinet@addresses', user);
+            bot.sendMessage(msg.from.id, response.message, response.menu);
+            bot.sendMessage(msg.from.id, t('Start main menu by choosing language'), langOptions);
         });
 
 

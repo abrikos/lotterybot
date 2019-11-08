@@ -73,7 +73,7 @@
     "logat": "^1.0.11",
     "markdown": "^0.5.0",
     "mini-css-extract-plugin": "0.4.3",
-    "minter-js-sdk": "^0.20.2",
+    "minter-js-sdk": "^0.20.3",
     "minterjs-wallet": "^3.0.3",
     "mobx": "^5.6.0",
     "mobx-async-connect": "^2.0.4",

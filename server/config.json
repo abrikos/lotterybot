@@ -82,7 +82,7 @@
 
       "name": "Minter MNT (testnet)",
       "coin": "MNT",
-      "prize": 1000,
+      "prize": 200,
       "home": "https://www.minter.network",
       "chainId": 2,
       "explorerUrl": "https://testnet.explorer.minter.network",
