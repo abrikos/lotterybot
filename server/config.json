@@ -41,7 +41,8 @@
       "prize": 1,
       "chainId": 3,
       "toFixed": 3,
-      "home": "https://faucet.ropsten.be",
+      "home": "https://ropsten.etherscan.io",
+      "faucet": "https://faucet.ropsten.be",
       "ownerAddress": "0xF63A30D7df2f2193c922b68e48c2FAb72076250e"
     },
     {
@@ -55,7 +56,8 @@
       "prize": 0.05,
       "toFixed": 3,
       "chainId": 3,
-      "home": "https://faucet.kovan.network/",
+      "home": "https://faucet.etherscan.io/",
+      "faucet": "https://faucet.kovan.network/",
       "ownerAddress": "0xF63A30D7df2f2193c922b68e48c2FAb72076250e"
     },
     {
@@ -79,11 +81,11 @@
       "key": "minter-mnt",
       "walletAddressRegexp" : "^Mx[a-fA-F0-9]{40}$",
       "referralPercent": 0.3,
-
       "name": "Minter MNT (testnet)",
       "coin": "MNT",
       "prize": 200,
       "home": "https://www.minter.network",
+      "faucet": "https://telegram.me/mnt_crane_bot",
       "chainId": 2,
       "explorerUrl": "https://testnet.explorer.minter.network",
       "explorerApiUrl": "https://explorer-api.testnet.minter.network/api/v1",

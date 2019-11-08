@@ -53,20 +53,20 @@ export default {
                 for (const transaction of transactions) {
                     const txFound = await mongoose.Transaction.findOne({hash: transaction.hash});
                     if (txFound) {
-                        const payment = await mongoose.Payment.findOne({starterTx: txFound.message.starterTx, payedTx:null}).populate(mongoose.Payment.population);
+                        const payment = await mongoose.Payment.findOne({starterTx: txFound.message.starterTx, payedTx: null}).populate(mongoose.Payment.population);
                         if (payment) {
                             logger.info('Found success pay transaction', transaction.hash)
                             //Close payment
 
                             if (payment.type === 'winner') {
                                 const message = `${App.getNetwork().name} lottery finished. Prize: *${payment.amount}* ${payment.coin}\nTX: ${transaction.hash}`;
-                                logger.info(message)
-                                //this.bot.sendMessage(Configurator.getGroupId(), message, {parse_mode: "Markdown"});
+                                //logger.info(message)
+                                this.bot.sendMessage(Configurator.getGroupId(), message, {parse_mode: "Markdown"});
                             }
                             if (payment.type === 'lottery') {
                                 const message = `Lottery payed: *${payment.amount}* ${payment.coin}\n\n${App.lotteryInfo(payment.lottery)}`;
-                                logger.info(message)
-                                //this.bot.sendMessage(Configurator.getGroupId(), message, {parse_mode: "Markdown"});
+                                //logger.info(message)
+                                this.bot.sendMessage(Configurator.getGroupId(), message, {parse_mode: "Markdown"});
                             }
                             if (payment.type === 'owner') {
                                 const message = `EARNED: *${payment.amount}* ${payment.coin}`;
@@ -107,13 +107,14 @@ export default {
 
 
         jobs.executePayments = new CronJob('*/10 * * * * *', async () => {
-            const payments = await mongoose.Payment.find({payedTx: null})
+            const payment = await mongoose.Payment.findOne({payedTx: null})
                 .populate(mongoose.Payment.population);
-            for (const payment of payments) {
-                const App = new Configurator(payment.lottery.network);
-                const paymentTx = await App.paymentExecute(payment);
-                if(!paymentTx.error) logger.info(paymentTx);
-            }
+            if (!payment) return;
+            //for (const payment of payments) {
+            const App = new Configurator(payment.lottery.network);
+            const paymentTx = await App.paymentExecute(payment);
+            if (!paymentTx.error) logger.info(App.crypto.getTransactionLink(paymentTx.hash));
+            //}
 
         }, null, true, 'America/Los_Angeles');
 

@@ -1,15 +1,15 @@
 import {Configurator} from "server/lib/Configurator";
-
 const t = require("server/i18n");
+const noMarkdown =  true;
 
 export default {
-    async process(args) {
-        return await this[args.action]()
-    },
-
     async start(){
         const message = t('Main menu');
         const menu = [
+            [
+                {text: t('Supported crypto currencies'), callback_data: 'home@cryptoList'},
+
+            ],
             [
                 {text: t('Active lotteries'), callback_data: 'lottery@listAll'},
 
@@ -26,14 +26,20 @@ export default {
     },
 
     async cryptoList(){
-        const message = t('List of supported crypto currencies') +':\n'+ Configurator.getNetworks().map(n=>n.name).join(',\n');
+        let message = t('List of supported crypto currencies') +':\n\n'
+            for(const net of Configurator.getNetworks()){
+                message += net.name +'\n';
+                message += net.home +'\n';
+                if(net.faucet) message+= t('Faucet') +': '+ net.faucet+'\n';
+                message+='------------------------\n\n';
+            }
         const menu = [
             [
                 {text: t('Main menu'), callback_data: 'home@start'},
 
             ]
         ];
-        return {message, menu}
+        return {message, menu, noMarkdown}
 
     },
 
@@ -47,7 +53,7 @@ export default {
 
             ]
         ];
-        return {message, menu, noMarkdown: true}
+        return {message, menu, noMarkdown}
     }
 }
 

@@ -13,7 +13,10 @@ export default {
 
     async process(data, user) {
         const {module, action, params} = this.parseData(data);
-        const response = await Callbacks[module].process({action, params, user});
+        let error;
+        if(!Callbacks[module]) return {error: `Wrong module "${module}"`};
+        if(!Callbacks[module][action]) return {error: `Wrong action "${action}" for module "${module}"`};
+        const response = await Callbacks[module][action]({params, user});
         const inline_keyboard = response.menu;
         /*response.menu = {
             parse_mode: "Markdown",

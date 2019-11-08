@@ -3,10 +3,6 @@ import mongoose from "server/lib/mongoose";
 
 const t = require("server/i18n");
 export default {
-    async process(args) {
-        return await this[args.action](args);
-    },
-
     async start() {
         const message = t('Cabinet');
         const menu = [
@@ -20,11 +16,11 @@ export default {
             ],
             [
                 {text: t('Referrals'), callback_data: 'cabinet@referrals'},
-                {text: t('Bets'), callback_data: 'cabinet@bets'},
+                //{text: t('Bets'), callback_data: 'cabinet@bets'},
             ],
             [{text: t('Back'), callback_data: 'home@start'},]
         ];
-        return {message, menu, replacePrev: true}
+        return {message, menu, replacePrev: false}
 
     },
 
@@ -65,10 +61,11 @@ export default {
     },
 
     async referrals(args) {
+        let message = t('My referrals')+':';
         for(const ref of args.user.referrals){
-            console.log(ref)
+            message += '\n'+ref.first_name;
         }
-        const message = 'REF';
+
         const menu = [];
         return {message, menu, replacePrev: false}
     },

@@ -189,7 +189,7 @@ export default {
         return this.network.explorerUrl + '/address/' + address
     },
     getTransactionLink(hash) {
-        return this.network.explorerUrl + '/transaction/' + hash
+        return this.network.explorerUrl + '/transactions/' + hash
     },
 
 

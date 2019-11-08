@@ -1,6 +1,7 @@
 import * as CallBacks from "server/lib/bot/callbacks"
 import Callback from "server/lib/Callback"
 import {Configurator} from "server/lib/Configurator"
+import logger from "logat";
 
 
 const i18n = require("i18n");
@@ -104,11 +105,12 @@ paymentaddresses - List of your addresses for participating in each of the activ
             }
         });
 
-        bot.on('callback_query', async function (callbackQuery) {
+        bot.on('callback_query', async (callbackQuery) => {
             const user = await this.App.getUser(callbackQuery.from);
             i18n.setLocale(user.language_code);
             const msg = callbackQuery.message;
             const response = await Callback.process(callbackQuery.data, user);
+            if(response.error) return logger.error(response.error);
             if (response.replacePrev) {
                 await bot.editMessageText(response.message, {chat_id: msg.chat.id, message_id: msg.message_id});
                 await bot.editMessageReplyMarkup(response.menu.reply_markup, {chat_id: msg.chat.id, message_id: msg.message_id});
