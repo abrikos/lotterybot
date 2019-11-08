@@ -88,18 +88,6 @@ export default {
         return {hash: 'Mt' + res.result.hash};
 
     },
-    async get(url, action) {
-        try {
-            const res = await axios(`${url}${action}`);
-            return res.data;
-        } catch (error) {
-            if (error.response)
-                return {error: error.response.status, data: error.response.data};
-            else
-                return {error: 'Server not response', data: 'Can not connect to server'}
-        }
-    },
-
 
     async getBalance(address) {
         const [error, res] = await to(axios(`${this.network.apiUrl}/address?address=${address}`));
@@ -175,15 +163,28 @@ export default {
         return this.adaptTx(tx);
     },
 
+    async getApi(action) {
+        //logger.info(this.network.apiUrl + action)
+        return await this.get(this.network.apiUrl, action)
+    },
+
     async getExplorer(action) {
         const res = await this.get(this.network.explorerApiUrl, action)
         return res.data;
     },
 
-    async getApi(action) {
-        //logger.info(this.network.apiUrl + action)
-        return await this.get(this.network.apiUrl, action)
+    async get(url, action) {
+        try {
+            const res = await axios(`${url}${action}`);
+            return res.data;
+        } catch (error) {
+            if (error.response)
+                return {error: error.response.status, data: error.response.data};
+            else
+                return {error: 'Server not response', data: 'Can not connect to server'}
+        }
     },
+
 
     getAddressLink(address) {
         return this.network.explorerUrl + '/address/' + address

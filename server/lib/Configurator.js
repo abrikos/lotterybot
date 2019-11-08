@@ -34,8 +34,7 @@ export class Configurator {
 
     constructor(key) {
         this.config = config;
-        this.networks = config.networks.filter(n => n.enabled);
-
+        this.networks = config.networks;//.filter(n => n.enabled);
         this.network = this.networks.find(n => n.key === key)
         switch (this.network.key) {
             case 'minter-bip':
@@ -165,7 +164,7 @@ export class Configurator {
             starterTx: transaction.hash,
             type: 'referral',
             coin: this.getCoin()
-        }
+        };
         try {
             mongoose.Payment.create(args);
             return true;
@@ -215,10 +214,10 @@ export class Configurator {
             message: payment.message,
             noCommission
         };
-        logger.info('TRY EXECUTE PAYMENT', args)
+        logger.info('TRY EXECUTE PAYMENT', amount)
         const tx = await this.crypto.send(args);
         if (tx.error) {
-            if(tx.code !== 'Insufficient funds') logger.error("Can't execute payment", args, tx);
+            logger.error("Can't execute payment", tx);
         }else{
             payment.payedTx = tx.hash;
             await payment.save();
@@ -256,7 +255,7 @@ export class Configurator {
         if (!network) return {error: 'WRONG NETWORK:' + user.waitForReferralAddress};
         const regexp = new RegExp(network.walletAddressRegexp);
         if (!address.match(regexp)) return {error: 'Wrong address', network}
-        const found = this.addresses.find(a => a.network === network.key)
+        const found = user.addresses.find(a => a.network === network.key)
         if (found) {
             found.address = address;
         } else {
@@ -272,9 +271,9 @@ export class Configurator {
             + '\n' + t('Referral program') + `: *${this.getNetwork().referralPercent * 100}%*`
             + '\n' + t('Lottery starts') + `: *${lottery.date}*`
             + '\n' + t('The lottery will end when the balance of it wallet reaches') + `: *${this.getStopSum(true)}* ${lottery.coin}`
-            + '\n' + t('Current lottery balance') + `: *${lottery.balance.toFixed(2)}* ${lottery.coin}`
+            + '\n' + t('Current lottery balance') + `: *${lottery.balance.toFixed(this.network.toFixed)}* ${lottery.coin}`
             + '\n' + t('Lottery wallet') + `: ${this.crypto.getAddressLink(lottery.wallet.address)}`
-            + '\n' + t('Percent completion') + `: *${(lottery.balance / this.getStopSum() * 100).toFixed(2)}%*`
+            + '\n' + t('Percent completion') + `: *${(lottery.balance / this.getStopSum() * 100).toFixed(this.network.toFixed)}%*`
     };
 
 

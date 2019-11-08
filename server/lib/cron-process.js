@@ -5,44 +5,30 @@ const CronJob = require('cron').CronJob;
 const mongoose = require('./mongoose');
 
 
-//mongoose.Transaction.findOne({hash:'Mtaf750fc0ce2143fcb344dda36ff51452e7a8c5dcfd74d38036606b305dde49b4'}).then(console.log)
+//mongoose.Transaction.findById('5dc51d7fde99157de21e63ef').then(console.log)
+//mongoose.Wallet.find({user:{$ne:null}}).then(console.log)
 //mongoose.Transaction.deleteMany({}, console.log);mongoose.Payment.deleteMany({}, console.log);mongoose.Payment.collection.dropAllIndexes(console.log)
 
+
+//USER ADDRESS
+/*
+mongoose.Wallet.findOne({address:'0x24918203c53f21ca9c7ace7f6a11749737489675'.toLowerCase()})
+    .then(w=>{
+        const A = new Configurator(w.network);
+        //ADDRESS LOTTERY
+        A.crypto.send({address:'0x51db9a536e75d4b52a066bec82af9c584b9fe328', pk: w.seed, amount:0.001})
+    })
+*/
+
+
 export default {
+
     bot: null,
-    init(bot) {
-        if (0) {
-            //mongoose.User.deleteMany({}, console.log);
-            mongoose.Wallet.deleteMany({}, () => {
-                mongoose.User.find()
-                    .populate('wallets')
-                    .then(users => {
-                        for (const user of users) {
-                            for (const network of Configurator.getKeys()) {
-                                if (!user.getWallet(network)) {
-                                    const App = new Configurator(network);
-                                    App.createWallet(user)
-                                }
-                            }
-                        }
-                    })
-            });
-            mongoose.Lottery.deleteMany({}, console.log);
-            mongoose.Transaction.deleteMany({}, console.log);
-            mongoose.Payment.deleteMany({}, console.log);
-            return;
-        }
+
+    async run(bot) {
 
         this.bot = bot;
         const jobs = {};
-
-        for (const network of Configurator.getKeys()) {
-            const App = new Configurator(network);
-            mongoose.Lottery.findOne({finishTime: 0, network})
-                .then(lottery => {
-                    if (!lottery) App.lotteryCreate();
-                });
-        }
 
         jobs.transactions = new CronJob('*/10 * * * * *', async () => {
             const wallets = await mongoose.Wallet.find()
@@ -53,30 +39,6 @@ export default {
                 for (const transaction of transactions) {
                     const txFound = await mongoose.Transaction.findOne({hash: transaction.hash});
                     if (txFound) {
-                        const payment = await mongoose.Payment.findOne({starterTx: txFound.message.starterTx, payedTx: null}).populate(mongoose.Payment.population);
-                        if (payment) {
-                            logger.info('Found success pay transaction', transaction.hash)
-                            //Close payment
-
-                            if (payment.type === 'winner') {
-                                const message = `${App.getNetwork().name} lottery finished. Prize: *${payment.amount}* ${payment.coin}\nTX: ${transaction.hash}`;
-                                //logger.info(message)
-                                this.bot.sendMessage(Configurator.getGroupId(), message, {parse_mode: "Markdown"});
-                            }
-                            if (payment.type === 'lottery') {
-                                const message = `Lottery payed: *${payment.amount}* ${payment.coin}\n\n${App.lotteryInfo(payment.lottery)}`;
-                                //logger.info(message)
-                                this.bot.sendMessage(Configurator.getGroupId(), message, {parse_mode: "Markdown"});
-                            }
-                            if (payment.type === 'owner') {
-                                const message = `EARNED: *${payment.amount}* ${payment.coin}`;
-                                logger.info(message)
-                            }
-                            if (payment.type === 'referral') {
-                                const message = `REFERRAL: *${payment.amount}* ${payment.coin}`;
-                                logger.info(message)
-                            }
-                        }
                         continue;
                     }
                     transaction.wallet = wallet;
@@ -96,6 +58,11 @@ export default {
 
             for (const transaction of transactions) {
                 const App = new Configurator(transaction.network)
+                if(!transaction.walletFrom){
+                    logger.info('TRY set referral address');
+                    await App.setReferralAddress(transaction.walletTo.user, transaction.from);
+                }
+
                 if (App.payReferralParent(transaction) && App.moveToLottery(transaction)) {
                     transaction.paymentProcessed = true;
                     transaction.save();
@@ -110,11 +77,30 @@ export default {
             const payment = await mongoose.Payment.findOne({payedTx: null})
                 .populate(mongoose.Payment.population);
             if (!payment) return;
-            //for (const payment of payments) {
             const App = new Configurator(payment.lottery.network);
             const paymentTx = await App.paymentExecute(payment);
-            if (!paymentTx.error) logger.info(App.crypto.getTransactionLink(paymentTx.hash));
-            //}
+            if (paymentTx.error) return;
+            logger.info('TRANSACTION PAYED',App.crypto.getTransactionLink(paymentTx.hash));
+
+            if (payment.type === 'winner') {
+                const message = `${App.getNetwork().name} lottery finished. Prize: *${payment.amount}* ${payment.coin}\nTX: ${transaction.hash}`;
+                //logger.info(message)
+                this.bot.sendMessage(Configurator.getGroupId(), message, {parse_mode: "Markdown"});
+            }
+            if (payment.type === 'lottery') {
+                const message = `Lottery payed: *${payment.amount}* ${payment.coin}\n\n${App.lotteryInfo(payment.lottery)}`;
+                //logger.info(message)
+                this.bot.sendMessage(Configurator.getGroupId(), message, {parse_mode: "Markdown"});
+            }
+            if (payment.type === 'owner') {
+                const message = `EARNED: *${payment.amount}* ${payment.coin}`;
+                logger.info(message)
+            }
+            if (payment.type === 'referral') {
+                const message = `REFERRAL: *${payment.amount}* ${payment.coin}`;
+                logger.info(message)
+            }
+
 
         }, null, true, 'America/Los_Angeles');
 

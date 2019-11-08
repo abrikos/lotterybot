@@ -17,5 +17,5 @@ const bot = new TelegramBot(process.env.BOT_TOKEN, {
         }
     }
 });
-BotProcess.init(bot);
-CronProcess.init(bot);
+BotProcess.run(bot);
+CronProcess.run(bot);

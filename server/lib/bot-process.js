@@ -12,7 +12,7 @@ const mongoose = require("server/lib/mongoose");
 
 
 export default {
-    init: (bot) => {
+    run: (bot) => {
 //Chat messages
 
 /*
@@ -22,7 +22,8 @@ lotteries - List of active lotteries
 winners - List of winners
 paymentaddresses - List of your addresses for participating in each of the active lotteries
 */
-        this.App = new Configurator('minter-mnt');
+        const nets = Configurator.getNetworks();
+        this.App = new Configurator(nets[0].key);
         bot.onText(/\/winners/, async (msg, match) => {
             const lottery = await mongoose.Lottery.getCurrent();
             await bot.sendMessage(msg.chat.id, lottery.info, {parse_mode: "Markdown"});

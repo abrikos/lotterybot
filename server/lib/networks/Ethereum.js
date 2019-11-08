@@ -1,125 +1,123 @@
-import moment from "moment";
-
-const API = require('etherscan-api');
-const Web3 = require('web3');
-const util = require('ethereumjs-util');
-const Tx = require('ethereumjs-tx').Transaction;
-const ecies = require("eth-ecies");
-
 const axios = require("axios");
 const logger = require('logat');
-const promiser = require('server/lib/to');
-
+const ethers = require('ethers')
+const promise = require('server/lib/to')
 
 
 export default {
     network: null,
-    test:'zzzzzzzzzz',
+
     init(network) {
         this.network = network;
+        this.explorerApiUrl = `https://api${this.network.api ? '-' + this.network.api : ''}.etherscan.io/api?module=`;
+        this.explorerUrl = `https://${this.network.api}.etherscan.io`;
         //this.api = API.init('YourApiKey','rinkeby', '3000')
-        this.api = new Web3(new Web3.providers.HttpProvider(`https://${this.network.api}.infura.io/`));
+        //this.api = new Web3(new Web3.providers.HttpProvider(`https://${this.network.api}.infura.io/`));
         //this.api = new EthereumWallet(`https://${this.network.api}.infura.io/`);
+        this.provider = ethers.getDefaultProvider(this.network.api);
         return this
     },
 
     async generateWallet() {
-        const account = this.api.eth.accounts.create();
+        const w = ethers.Wallet.createRandom();
         const wallet = {};
-        wallet.seed = account.privateKey;
-        wallet.address = account.address;
+        wallet.seed = w.privateKey;
+        wallet.address = w.address.toLowerCase();
         return wallet;
     },
 
 
     async getBalance(address) {
-        return this.api.utils.fromWei(await this.api.eth.getBalance(address));
+        const res = await this.getExplorer('account&action=balance&address='+address)
+        return res.result * 1;
     },
 
 
     adaptTx(tx) {
+        tx.network = this.network.key;
         tx.coin = this.network.coin;
-        const message = this.decode(tx.payload);
+        const message = this.decode(tx.input);
         try {
             tx.message = JSON.parse(message);
         } catch (e) {
             tx.message = message;
         }
-
-        tx.date = moment(tx.timestamp);
-        tx.value = tx.data.value * 1;
-        tx.to = tx.data.to;
-        if (tx.data.coin !== this.network.coin) {
-            tx.error = 'WRONG COIN';
-        }
+        tx.timestamp = tx.timeStamp;
+        tx.from = tx.from.toLowerCase();
+        tx.to = tx.to.toLowerCase();
+        tx.value = ethers.utils.formatEther(tx.value);
         return tx;
     },
 
-    async multiSendTx(list, pk, message) {
-        const txs = [];
-        for (const item of list) {
-            const tx = await this.postTx(item.to, pk, item.value, message)
-            txs.push(tx);
-        }
-        return txs[0];
+    async getCommission() {
+        const gasPrice = await this.provider.getGasPrice();
+        const gasLimit = 21000;
+        return ethers.utils.formatEther( gasPrice.mul(gasLimit).toNumber());
     },
 
-    async postTx(to, pk, value, message) {
-        const block = await this.api.eth.getBlock("latest");
-        const gasLimit = this.api.utils.toHex(block.gasLimit);
-        const gas = await this.api.eth.estimateGas({to, "data": this.encrypt(message)});
-        const account = await this.api.eth.accounts.privateKeyToAccount(pk)
-        let nonce = await this.api.eth.getTransactionCount(account.address)
-        nonce = nonce + 1;
-        const gasPrice = this.api.utils.toHex(gas*10000);
-        const privateKey = Buffer.from(pk.substring(2), 'hex');
-        const rawTx = {
-            nonce,
-            gasPrice,
-            gasLimit,
-            to,
-            value,
-            //data: this.encrypt(message)
+
+    async send({address, pk, amount, message, noCommission}) {
+        const wallet = new ethers.Wallet(pk, this.provider);
+        const com = await this.getCommission();
+        const commission = ethers.utils.parseEther(com);
+        const value =  ethers.utils.parseEther(amount.toFixed(17).toString());
+        const tx = {
+            to: address,
+            value: noCommission ? value : value.sub(commission),
+            data: this.encode(message)
         };
-        logger.info(rawTx, gas)
-        const tx = new Tx(rawTx, {'chain': this.network.api});
-        tx.sign(privateKey);
-        const serializedTx = tx.serialize();
-        //const [error, hash] = await promiser(this.api.eth.sendSignedTransaction('0x' + serializedTx.toString('hex')).on('receipt', console.log))
-        this.api.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'))
-            .on('receipt', console.log)
-            //.on('transactionHash', console.log)
-            .on('confirmation', console.log)
-            .on('error', console.log)
-        return;
-
-
-        if (!error) {
-            logger.info('ZZZZZZZZZZZZZZZZZZZZZZ',hash)
-            return {hash}
-        } else {
-            //logger.error(error)
-            return {error}
+        const [error,res] = await promise(wallet.sendTransaction(tx));
+        if(error){
+            error.from =  wallet.address;
+            error.to =  address;
+            error.amount =  amount;
+            error.value = ethers.utils.formatEther(tx.value.toString());
+            error.commission = com;
+            return error;
         }
-
+        return res;
 
     },
 
-    encrypt(publicKey, data) {
-        if (!data) return '0x00';
-        let userPublicKey = new Buffer(publicKey, 'hex');
-        let bufferData = new Buffer(data);
-
-        let encryptedData = ecies.encrypt(userPublicKey, bufferData);
-
-        return encryptedData.toString('base64')
+    adaptTransactions(txs) {
+        if (typeof txs !== 'object') return [];
+        return txs.map(tx => this.adaptTx(tx)).filter(tx => tx && !tx.error && tx.message !== 'this is a gift')
     },
+
+
+    async loadTransactions(address) {
+        //this.transactions = await this.getTransactionsList().catch(e  console.log(e));
+        if (!this.checkAddress(address)) return [];
+        const res = await this.getExplorer(`account&action=txlist&address=${address}`);
+        if (res.message !== "OK") return [];
+        return this.adaptTransactions(res.result);
+    },
+
+    async getExplorer(action) {
+        return await this.get(this.explorerApiUrl, action);
+    },
+
+    async get(url, action) {
+        //logger.info(`${url}${action}`)
+        try {
+            const res = await axios(`${url}${action}`);
+            return res.data;
+
+        } catch (error) {
+            if (error.response)
+                return {error: error.response.status, data: error.response.data};
+            else
+                return {error: 'Server not response', data: 'Can not connect to server'}
+        }
+    },
+
+
 
     getAddressLink(address) {
-        return this.network.explorerUrl + '/address/' + address
+        return this.explorerUrl + '/address/' + address
     },
     getTransactionLink(hash) {
-        return this.network.explorerUrl + '/transaction/' + hash
+        return this.explorerUrl + '/transactions/' + hash
     },
 
 
@@ -127,9 +125,15 @@ export default {
         const re = new RegExp(this.network.walletAddressRegexp);
         return address.match(re)
     },
+
+    encode(message) {
+        return ethers.utils.hexlify(ethers.utils.toUtf8Bytes(message || ''))
+    },
+
     decode(value) {
         if (!value) return '';
-        return Buffer.from(value, 'base64').toString('ascii')
+        return ethers.utils.toUtf8String(ethers.utils.hexlify(value))
+
     }
 
 
