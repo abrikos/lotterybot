@@ -57,7 +57,7 @@ export default {
             coinSymbol: this.network.coin,
             feeCoinSymbol: this.network.coin,
             gasPrice: 1,
-            message: typeof message === 'object' ? JSON.stringify(message) : message,
+            message: JSON.stringify(message),
         }
     },
 

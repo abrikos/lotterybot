@@ -60,10 +60,6 @@ export class Configurator {
         return this.network
     }
 
-    getStopSum(fixed) {
-        const sum = this.getNetwork().prize / this.config.lotteryPercent;
-        return fixed ? sum.toFixed(this.getNetwork().toFixed * 1) : sum
-    }
 
     getPrize() {
         return this.getNetwork().prize;
@@ -91,7 +87,7 @@ export class Configurator {
 
     async lotteryFinish(lottery) {
         if (lottery.finishTime) return;
-        if (lottery.balance < this.getStopSum()) return;
+        if (lottery.balance > lottery.stopLimit) return;
 
         const players = [];
         for (const tx of lottery.transactionsFromUser) {
@@ -108,7 +104,7 @@ export class Configurator {
             lottery: lottery,
             type: 'winner',
             starterTx: lottery.winner.hash,
-            message: {msg: this.config.appName + '. Winner', starterTx: lottery.winner.hash},
+            message: {msg: this.config.appName + '. Winner', starterTx: lottery.winner.hash, type: 'winner'},
             coin: lottery.coin
         };
         mongoose.Payment.create(argsWinner);
@@ -125,7 +121,8 @@ export class Configurator {
             lottery: lottery,
             type: 'owner',
             starterTx: lottery.winner.hash,
-            coin: lottery.coin
+            coin: lottery.coin,
+            message: {starterTx: lottery.winner.hash, type: 'owner'},
         };
         mongoose.Payment.create(argsOwner);
         lottery.finishTime = new Date().valueOf();
@@ -136,7 +133,8 @@ export class Configurator {
 
     async lotteryCreate() {
         const wallet = await this.createWallet();
-        return await mongoose.Lottery.create({finishTime: 0, wallet, network: wallet.network, coin: this.getCoin()});
+        const stopLimit = this.network.prize / this.config.lotteryPercent;
+        return await mongoose.Lottery.create({finishTime: 0, wallet, network: wallet.network, coin: this.getCoin(), stopLimit});
     }
 
     async lotteryCurrent() {
@@ -159,7 +157,7 @@ export class Configurator {
             to: address,
             from: transaction.walletTo.address,
             amount: referral,
-            message: App.config.appName + '. Referral payment',
+            message: {msg: App.config.appName + '. Referral payment', type: 'referral'},
             lottery: transaction.lottery,
             starterTx: transaction.hash,
             type: 'referral',
@@ -191,7 +189,7 @@ export class Configurator {
             lottery: transaction.lottery,
             starterTx: transaction.hash,
             type: 'lottery',
-            message: {starterTx: transaction.hash},
+            message: {starterTx: transaction.hash, type: 'lottery'},
             coin: this.getCoin()
         };
         try {
@@ -218,7 +216,7 @@ export class Configurator {
         const tx = await this.crypto.send(args);
         if (tx.error) {
             logger.error("Can't execute payment", tx);
-        }else{
+        } else {
             payment.payedTx = tx.hash;
             await payment.save();
         }
@@ -270,10 +268,10 @@ export class Configurator {
         return t('Crypto currency') + `: *${this.getNetwork().name}*`
             + '\n' + t('Referral program') + `: *${this.getNetwork().referralPercent * 100}%*`
             + '\n' + t('Lottery starts') + `: *${lottery.date}*`
-            + '\n' + t('The lottery will end when the balance of it wallet reaches') + `: *${this.getStopSum(true)}* ${lottery.coin}`
+            + '\n' + t('The lottery will end when the balance of it wallet reaches') + `: *${lottery.stopLimit.toFixed(this.network.toFixed)}* ${lottery.coin}`
             + '\n' + t('Current lottery balance') + `: *${lottery.balance.toFixed(this.network.toFixed)}* ${lottery.coin}`
             + '\n' + t('Lottery wallet') + `: ${this.crypto.getAddressLink(lottery.wallet.address)}`
-            + '\n' + t('Percent completion') + `: *${(lottery.balance / this.getStopSum() * 100).toFixed(this.network.toFixed)}%*`
+            + '\n' + t('Percent completion') + `: *${(lottery.balance / lottery.stopLimit * 100).toFixed(this.network.toFixed)}%*`
     };
 
 

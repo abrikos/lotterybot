@@ -50,29 +50,36 @@ export default {
     },
 
     async getCommission() {
-        const gasPrice = await this.provider.getGasPrice();
-        const gasLimit = 21000;
-        return ethers.utils.formatEther( gasPrice.mul(gasLimit).toNumber());
+        return ethers.utils.formatEther( await this.commission());
     },
 
+    async commission(){
+        const gasPrice = await this.provider.getGasPrice();
+        const gasLimit = 21000;
+        return  gasPrice.mul(gasLimit).add(ethers.utils.parseEther('0.000002'));
+    },
 
     async send({address, pk, amount, message, noCommission}) {
         const wallet = new ethers.Wallet(pk, this.provider);
-        const com = await this.getCommission();
-        const commission = ethers.utils.parseEther(com);
-        const value =  ethers.utils.parseEther(amount.toFixed(17).toString());
+        const balance = await wallet.getBalance();
+
+        const commission = await this.commission();
+        let value =  ethers.utils.parseEther(amount.toFixed(17).toString());
+        logger.info(value.toString(), balance.toString())
+        if(balance.lt(value)) value = balance;
         const tx = {
             to: address,
             value: noCommission ? value : value.sub(commission),
             data: this.encode(message)
         };
+
         const [error,res] = await promise(wallet.sendTransaction(tx));
         if(error){
             error.from =  wallet.address;
             error.to =  address;
             error.amount =  amount;
             error.value = ethers.utils.formatEther(tx.value.toString());
-            error.commission = com;
+            error.commission =  ethers.utils.formatEther(commission);
             return error;
         }
         return res;
@@ -117,7 +124,7 @@ export default {
         return this.explorerUrl + '/address/' + address
     },
     getTransactionLink(hash) {
-        return this.explorerUrl + '/transactions/' + hash
+        return this.explorerUrl + '/tx/' + hash
     },
 
 
@@ -127,7 +134,8 @@ export default {
     },
 
     encode(message) {
-        return ethers.utils.hexlify(ethers.utils.toUtf8Bytes(message || ''))
+        const utf8 = ethers.utils.toUtf8Bytes(JSON.stringify(message) || '');
+        return ethers.utils.hexlify(utf8)
     },
 
     decode(value) {

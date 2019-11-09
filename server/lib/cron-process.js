@@ -41,6 +41,24 @@ export default {
                     if (txFound) {
                         continue;
                     }
+                    if (transaction.message.type === 'winner') {
+                        const message = `${App.getNetwork().name} lottery finished. Prize: *${transaction.value}* ${transaction.coin}\nTX: ${transaction.hash}`;
+                        //logger.info(message)
+                        this.bot.sendMessage(Configurator.getGroupId(), message, {parse_mode: "Markdown"});
+                    }
+                    if (transaction.message.type === 'lottery') {
+                        const message = `Lottery payed: *${transaction.value}* ${transaction.coin}\n\n${App.lotteryInfo(wallet.lottery)}`;
+                        //logger.info(message)
+                        this.bot.sendMessage(Configurator.getGroupId(), message, {parse_mode: "Markdown"});
+                    }
+                    if (transaction.message.type === 'owner') {
+                        const message = `EARNED: *${transaction.value}* ${transaction.coin}`;
+                        logger.info(message)
+                    }
+                    if (transaction.message.type === 'referral') {
+                        const message = `REFERRAL: *${transaction.value}* ${transaction.coin}`;
+                        logger.info(message)
+                    }
                     transaction.wallet = wallet;
                     transaction.lottery = wallet.currentLottery;
                     transaction.coin = App.getCoin();
@@ -81,26 +99,6 @@ export default {
             const paymentTx = await App.paymentExecute(payment);
             if (paymentTx.error) return;
             logger.info('TRANSACTION PAYED',App.crypto.getTransactionLink(paymentTx.hash));
-
-            if (payment.type === 'winner') {
-                const message = `${App.getNetwork().name} lottery finished. Prize: *${payment.amount}* ${payment.coin}\nTX: ${transaction.hash}`;
-                //logger.info(message)
-                this.bot.sendMessage(Configurator.getGroupId(), message, {parse_mode: "Markdown"});
-            }
-            if (payment.type === 'lottery') {
-                const message = `Lottery payed: *${payment.amount}* ${payment.coin}\n\n${App.lotteryInfo(payment.lottery)}`;
-                //logger.info(message)
-                this.bot.sendMessage(Configurator.getGroupId(), message, {parse_mode: "Markdown"});
-            }
-            if (payment.type === 'owner') {
-                const message = `EARNED: *${payment.amount}* ${payment.coin}`;
-                logger.info(message)
-            }
-            if (payment.type === 'referral') {
-                const message = `REFERRAL: *${payment.amount}* ${payment.coin}`;
-                logger.info(message)
-            }
-
 
         }, null, true, 'America/Los_Angeles');
 

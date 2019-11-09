@@ -62,6 +62,7 @@ modelSchema.virtual('date')
         return moment(this.createdAt).format('YYYY-MM-DD HH:mm')
     });
 
+
 modelSchema.virtual('transactionsFromUser')
     .get(function () {
         return this.transactions.filter(t => [t.from, t.to].indexOf(this.wallet.address) === -1)

@@ -40,6 +40,7 @@ modelSchema.statics.population = [
     {
         path: 'lottery',
         populate: [
+            'transactions',
             {
                 path: 'wallet',
                 populate: ['transactionsIn', 'transactionsOut']
