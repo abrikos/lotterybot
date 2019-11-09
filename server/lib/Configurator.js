@@ -87,8 +87,7 @@ export class Configurator {
 
     async lotteryFinish(lottery) {
         if (lottery.finishTime) return;
-        if (lottery.balance > lottery.stopLimit) return;
-
+        if (lottery.balance < lottery.stopLimit) return;
         const players = [];
         for (const tx of lottery.transactionsFromUser) {
             for (let i = 0; i < Math.ceil(tx.value); i++) {
@@ -212,7 +211,7 @@ export class Configurator {
             message: payment.message,
             noCommission
         };
-        logger.info('TRY EXECUTE PAYMENT', amount)
+        logger.info('TRY EXECUTE PAYMENT', amount, args.message)
         const tx = await this.crypto.send(args);
         if (tx.error) {
             logger.error("Can't execute payment", tx);
@@ -271,7 +270,7 @@ export class Configurator {
             + '\n' + t('The lottery will end when the balance of it wallet reaches') + `: *${lottery.stopLimit.toFixed(this.network.toFixed)}* ${lottery.coin}`
             + '\n' + t('Current lottery balance') + `: *${lottery.balance.toFixed(this.network.toFixed)}* ${lottery.coin}`
             + '\n' + t('Lottery wallet') + `: ${this.crypto.getAddressLink(lottery.wallet.address)}`
-            + '\n' + t('Percent completion') + `: *${(lottery.balance / lottery.stopLimit * 100).toFixed(this.network.toFixed)}%*`
+            + '\n' + t('Percent completion') + `: *${(lottery.balance / lottery.stopLimit * 100).toFixed(1)}%*`
     };
 
 

@@ -30,7 +30,7 @@ export default {
         this.bot = bot;
         const jobs = {};
 
-        jobs.transactions = new CronJob('*/10 * * * * *', async () => {
+        jobs.transactions = new CronJob('*/3 * * * * *', async () => {
             const wallets = await mongoose.Wallet.find()
                 .populate(mongoose.Wallet.population);
             for (const wallet of wallets) {
@@ -42,18 +42,19 @@ export default {
                         continue;
                     }
                     if (transaction.message.type === 'winner') {
-                        const message = `${App.getNetwork().name} lottery finished. Prize: *${transaction.value}* ${transaction.coin}\nTX: ${transaction.hash}`;
+                        const message = `${App.getNetwork().name} lottery finished. Prize: *${transaction.value}* ${transaction.coin}\nTX: ${App.crypto.getTransactionLink(transaction.hash)}`;
                         //logger.info(message)
                         this.bot.sendMessage(Configurator.getGroupId(), message, {parse_mode: "Markdown"});
                     }
                     if (transaction.message.type === 'lottery') {
+                        //logger.info(transaction, wallet)
                         const message = `Lottery payed: *${transaction.value}* ${transaction.coin}\n\n${App.lotteryInfo(wallet.lottery)}`;
                         //logger.info(message)
                         this.bot.sendMessage(Configurator.getGroupId(), message, {parse_mode: "Markdown"});
                     }
                     if (transaction.message.type === 'owner') {
-                        const message = `EARNED: *${transaction.value}* ${transaction.coin}`;
-                        logger.info(message)
+                        const message = `EARNED: *${transaction.value}* ${transaction.coin} ${App.crypto.getTransactionLink(transaction.hash)}`;
+                        this.bot.sendMessage(process.env.OWNER_ID, message, {parse_mode: "Markdown"});
                     }
                     if (transaction.message.type === 'referral') {
                         const message = `REFERRAL: *${transaction.value}* ${transaction.coin}`;
@@ -70,7 +71,7 @@ export default {
         }, null, true, 'America/Los_Angeles');
 
 
-        jobs.paymentsFromUserWallet = new CronJob('*/10 * * * * *', async () => {
+        jobs.paymentsFromUserWallet = new CronJob('*/5 * * * * *', async () => {
             const transactions = await mongoose.Transaction.find({paymentProcessed: null})
                 .populate(mongoose.Transaction.population);
 

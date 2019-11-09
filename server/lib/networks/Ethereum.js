@@ -3,7 +3,6 @@ const logger = require('logat');
 const ethers = require('ethers')
 const promise = require('server/lib/to')
 
-
 export default {
     network: null,
 
@@ -56,7 +55,7 @@ export default {
     async commission(){
         const gasPrice = await this.provider.getGasPrice();
         const gasLimit = 21000;
-        return  gasPrice.mul(gasLimit).add(ethers.utils.parseEther('0.000002'));
+        return  gasPrice.mul(gasLimit).mul(2);//.add(ethers.utils.parseEther('0.000002'));
     },
 
     async send({address, pk, amount, message, noCommission}) {
@@ -65,14 +64,12 @@ export default {
 
         const commission = await this.commission();
         let value =  ethers.utils.parseEther(amount.toFixed(17).toString());
-        logger.info(value.toString(), balance.toString())
         if(balance.lt(value)) value = balance;
         const tx = {
             to: address,
             value: noCommission ? value : value.sub(commission),
             data: this.encode(message)
         };
-
         const [error,res] = await promise(wallet.sendTransaction(tx));
         if(error){
             error.from =  wallet.address;

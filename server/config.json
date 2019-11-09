@@ -54,7 +54,7 @@
       "referralPercent": 0.3,
       "name": "Ethereum (kovan testnet)",
       "coin": "KOETH",
-      "prize": 0.05,
+      "prize": 0.1,
       "toFixed": 6,
       "chainId": 3,
       "home": "https://faucet.etherscan.io/",
