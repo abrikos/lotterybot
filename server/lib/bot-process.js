@@ -1,5 +1,5 @@
 import * as CallBacks from "server/lib/bot/callbacks"
-import Callback from "server/lib/Callback"
+import {CB} from "server/lib/Callback"
 import {Configurator} from "server/lib/Configurator"
 import logger from "logat";
 
@@ -12,7 +12,7 @@ const mongoose = require("server/lib/mongoose");
 
 
 export default {
-    run: (bot) => {
+    run: async (bot) => {
 //Chat messages
 
 /*
@@ -22,30 +22,20 @@ lotteries - List of active lotteries
 winners - List of winners
 paymentaddresses - List of your addresses for participating in each of the active lotteries
 */
+        const Callback = new CB();
         const nets = Configurator.getNetworks();
         this.App = new Configurator(nets[0].key);
-        bot.onText(/\/winners/, async (msg, match) => {
-            const lottery = await mongoose.Lottery.getCurrent();
-            await bot.sendMessage(msg.chat.id, lottery.info, {parse_mode: "Markdown"});
-        });
 
-        bot.onText(/\/paymentaddresses/, async (msg, match) => {
-            const user = await this.App.getUser(msg.from);
-            const response = await Callback.process('cabinet@lotteryAddresses', user);
-            await bot.sendMessage(msg.from.id, response.message, {parse_mode: "Markdown"});
-        });
-
-        bot.onText(/\/lotteries/, async (msg, match) => {
-            //const user = await this.App.getUser(msg.from);
-            const response = await Callback.process('lottery@listAll');
-            await bot.sendMessage(msg.chat.id, response.message, {parse_mode: "Markdown"});
-        });
-
-        bot.onText(/\/list/, async (msg, match) => {
-            const user = await this.App.getUser(msg.from);
-            const response = await Callback.process('lottery@listAll', user);
-            await bot.sendMessage(msg.from.id, response.message, {parse_mode: "Markdown"});
-        });
+        for(const command in Callback.commands()){
+            const reg = new RegExp(`/${command}(.*)`);
+            bot.onText(reg,async (msg, match)=>{
+                const user = await this.App.getUser(msg.from);
+                i18n.setLocale(user.language_code);
+                const response = await Callback.commands()[command]({msg,match, user});
+                if(response && response.message)
+                    await bot.sendMessage(msg.from.id, response.message, response.menu);
+            })
+        }
 
         bot.onText(/\/start(.*)/, async (msg, match) => {
             const user = await this.App.getUser(msg.from);
@@ -54,7 +44,6 @@ paymentaddresses - List of your addresses for participating in each of the activ
                 user.parent = await mongoose.User.findById(match[1].trim());
                 await user.save();
             }
-            i18n.setLocale(user.language_code);
             const keyboard = [];
             const firstLine = Configurator.getConfig().languages.map(l => l.title);
             //firstLine.push('🏠');
@@ -83,7 +72,6 @@ paymentaddresses - List of your addresses for participating in each of the activ
             const sendToId = msg.from.id;
 
             if (user.waitForReferralAddress) {
-                const app = new Configurator(user.waitForReferralAddress)
                 const result = this.App.setReferralAddress(user, msg.text)
                 if (!result.error) {
                     const response = await Callback.process('cabinet@start', user);

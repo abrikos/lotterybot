@@ -17,7 +17,7 @@
   ],
   "networks": [
     {
-      "enabled": false,
+      "enabled": true,
       "key": "eth",
       "api": "mainnet",
       "api2": "homestad",
@@ -32,12 +32,27 @@
       "ownerAddress": "0xF63A30D7df2f2193c922b68e48c2FAb72076250e"
     },
     {
-      "enabled": false,
+      "enabled": true,
       "key": "rinkeby",
       "api": "rinkeby",
       "walletAddressRegexp" : "^0x[a-fA-F0-9]{40}$",
       "referralPercent": 0.3,
-      "name": "Ethereum (ropsten testnet)",
+      "name": "RINKEBY Ethereum (testnet)",
+      "coin": "ETH",
+      "prize": 1,
+      "chainId": 3,
+      "toFixed": 3,
+      "home": "https://www.rinkeby.io",
+      "faucet": "https://faucet.rinkeby.io",
+      "ownerAddress": "0xF63A30D7df2f2193c922b68e48c2FAb72076250e"
+    },
+    {
+      "enabled": false,
+      "key": "ropsten",
+      "api": "ropsten",
+      "walletAddressRegexp" : "^0x[a-fA-F0-9]{40}$",
+      "referralPercent": 0.3,
+      "name": "ROPSTEN Ethereum (testnet)",
       "coin": "ETH",
       "prize": 1,
       "chainId": 3,
@@ -52,8 +67,8 @@
       "api": "kovan",
       "walletAddressRegexp" : "^0x[a-fA-F0-9]{40}$",
       "referralPercent": 0.3,
-      "name": "Ethereum (kovan testnet)",
-      "coin": "KOETH",
+      "name": "KOVAN Ethereum (testnet)",
+      "coin": "ETH",
       "prize": 0.1,
       "toFixed": 6,
       "chainId": 3,
@@ -65,7 +80,7 @@
       "key": "minter-bip",
       "walletAddressRegexp" : "^Mx[a-fA-F0-9]{40}$",
       "referralPercent": 0.3,
-      "enabled": false,
+      "enabled": true,
       "name": "Minter BIP",
       "coin": "BIP",
       "prize": 1000,
@@ -78,7 +93,7 @@
       "ownerAddress": "Mx389a3ec7916a7c40928ab89248524f67a834eab7"
     },
     {
-      "enabled": false,
+      "enabled": true,
       "key": "minter-mnt",
       "walletAddressRegexp" : "^Mx[a-fA-F0-9]{40}$",
       "referralPercent": 0.3,

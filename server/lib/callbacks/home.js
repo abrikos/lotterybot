@@ -29,6 +29,7 @@ export default {
         let message = t('List of supported crypto currencies') +':\n\n'
             for(const net of Configurator.getNetworks()){
                 message += net.name +'\n';
+                message += t('Coin') + ': ' + net.coin +'\n';
                 message += net.home +'\n';
                 if(net.faucet) message+= t('Faucet') +': '+ net.faucet+'\n';
                 message+='------------------------\n\n';

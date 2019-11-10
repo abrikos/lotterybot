@@ -9,7 +9,7 @@ export default {
     init(network) {
         this.network = network;
         this.explorerApiUrl = `https://api${this.network.api ? '-' + this.network.api : ''}.etherscan.io/api?module=`;
-        this.explorerUrl = `https://${this.network.api}.etherscan.io`;
+        this.explorerUrl = this.network.api === 'mainnet' ? `https://etherscan.io` : `https://${this.network.api}.etherscan.io`;
         //this.api = API.init('YourApiKey','rinkeby', '3000')
         //this.api = new Web3(new Web3.providers.HttpProvider(`https://${this.network.api}.infura.io/`));
         //this.api = new EthereumWallet(`https://${this.network.api}.infura.io/`);
@@ -27,7 +27,7 @@ export default {
 
 
     async getBalance(address) {
-        const res = await this.getExplorer('account&action=balance&address='+address)
+        const res = await this.getExplorer('account&action=balance&address=' + address)
         return res.result * 1;
     },
 
@@ -49,13 +49,13 @@ export default {
     },
 
     async getCommission() {
-        return ethers.utils.formatEther( await this.commission());
+        return ethers.utils.formatEther(await this.commission());
     },
 
-    async commission(){
+    async commission() {
         const gasPrice = await this.provider.getGasPrice();
         const gasLimit = 21000;
-        return  gasPrice.mul(gasLimit).mul(2);//.add(ethers.utils.parseEther('0.000002'));
+        return gasPrice.mul(gasLimit).mul(2);//.add(ethers.utils.parseEther('0.000002'));
     },
 
     async send({address, pk, amount, message, noCommission}) {
@@ -63,20 +63,20 @@ export default {
         const balance = await wallet.getBalance();
 
         const commission = await this.commission();
-        let value =  ethers.utils.parseEther(amount.toFixed(17).toString());
-        if(balance.lt(value)) value = balance;
+        let value = ethers.utils.parseEther(amount.toFixed(17).toString());
+        if (balance.lt(value)) value = balance;
         const tx = {
             to: address,
             value: noCommission ? value : value.sub(commission),
             data: this.encode(message)
         };
-        const [error,res] = await promise(wallet.sendTransaction(tx));
-        if(error){
-            error.from =  wallet.address;
-            error.to =  address;
-            error.amount =  amount;
+        const [error, res] = await promise(wallet.sendTransaction(tx));
+        if (error) {
+            error.from = wallet.address;
+            error.to = address;
+            error.amount = amount;
             error.value = ethers.utils.formatEther(tx.value.toString());
-            error.commission =  ethers.utils.formatEther(commission);
+            error.commission = ethers.utils.formatEther(commission);
             return error;
         }
         return res;
@@ -114,7 +114,6 @@ export default {
                 return {error: 'Server not response', data: 'Can not connect to server'}
         }
     },
-
 
 
     getAddressLink(address) {

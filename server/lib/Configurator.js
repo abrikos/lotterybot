@@ -264,13 +264,16 @@ export class Configurator {
 
 
     lotteryInfo(lottery) {
-        return t('Crypto currency') + `: *${this.getNetwork().name}*`
+        let message = t('Crypto currency') + `: *${this.getNetwork().name}*`
             + '\n' + t('Referral program') + `: *${this.getNetwork().referralPercent * 100}%*`
-            + '\n' + t('Lottery starts') + `: *${lottery.date}*`
-            + '\n' + t('The lottery will end when the balance of it wallet reaches') + `: *${lottery.stopLimit.toFixed(this.network.toFixed)}* ${lottery.coin}`
-            + '\n' + t('Current lottery balance') + `: *${lottery.balance.toFixed(this.network.toFixed)}* ${lottery.coin}`
-            + '\n' + t('Lottery wallet') + `: ${this.crypto.getAddressLink(lottery.wallet.address)}`
-            + '\n' + t('Percent completion') + `: *${(lottery.balance / lottery.stopLimit * 100).toFixed(1)}%*`
+        if (lottery) {
+            message += '\n' + t('Lottery starts') + `: *${lottery.date}*`
+                + '\n' + t('The lottery will end when the balance of it wallet reaches') + `: *${lottery.stopLimit.toFixed(this.network.toFixed)}* ${lottery.coin}`
+                + '\n' + t('Current lottery balance') + `: *${lottery.balance.toFixed(this.network.toFixed)}* ${lottery.coin}`
+                + '\n' + t('Lottery wallet') + `: ${this.crypto.getAddressLink(lottery.wallet.address)}`
+                + '\n' + t('Percent completion') + `: *${(lottery.balance / lottery.stopLimit * 100).toFixed(1)}%*`
+        }
+        return message;
     };
 
 
