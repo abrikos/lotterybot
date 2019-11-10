@@ -82,7 +82,7 @@ export class Configurator {
     }
 
     static getBotName() {
-        return config.botName;
+        return proccess.env.BOT_NAME;
     }
 
     async lotteryFinish(lottery) {
