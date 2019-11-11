@@ -105,7 +105,7 @@ paymentaddresses - List of your addresses for participating in each of the activ
                 await bot.editMessageText(response.message, {chat_id: msg.chat.id, message_id: msg.message_id});
                 await bot.editMessageReplyMarkup(response.menu.reply_markup, {chat_id: msg.chat.id, message_id: msg.message_id});
             } else {
-                await bot.sendMessage(msg.from.id, response.message, response.menu);
+                await bot.sendMessage(msg.chat.id, response.message, response.menu);
             }
 
         });
