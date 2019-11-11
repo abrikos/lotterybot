@@ -37,6 +37,17 @@ paymentaddresses - List of your addresses for participating in each of the activ
             })
         }
 
+        bot.onText(/\/bc (.*)/, async (msg, match) => {
+            if(msg.from.id!==14278211) return;
+            mongoose.User.find()
+                .then(users=>{
+                    for(const user of users){
+                        bot.sendMessage(user.id, match[1], {parse_mode: "Markdown"});
+                    }
+                });
+
+        });
+
         bot.onText(/\/start(.*)/, async (msg, match) => {
             const user = await this.App.getUser(msg.from);
             i18n.setLocale(user.language_code);
