@@ -36,7 +36,7 @@ export default {
                 .populate(mongoose.Wallet.population);
             for (const wallet of wallets) {
                 const App = new Configurator(wallet.network);
-                logger.info('Wallet', wallet.network)
+                if(wallet.network==='minter-mnt') logger.info('Wallet', App.crypto.getAddressLink(wallet.address))
                 const transactions = await App.crypto.loadTransactions(wallet.address);
                 for (const transaction of transactions) {
                     logger.info('TX check', App.crypto.getTransactionLink(transaction.hash))
