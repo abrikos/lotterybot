@@ -31,13 +31,15 @@ export default {
         const jobs = {};
 
         jobs.transactions = new CronJob('*/3 * * * * *', async () => {
+            logger.info('cron transactions')
             const wallets = await mongoose.Wallet.find()
                 .populate(mongoose.Wallet.population);
             for (const wallet of wallets) {
                 const App = new Configurator(wallet.network);
+                logger.info('Wallet', App.crypto.getAddressLink(wallet.address))
                 const transactions = await App.crypto.loadTransactions(wallet.address);
                 for (const transaction of transactions) {
-                    logger.info(transaction.hash)
+                    logger.info('TX check', App.crypto.getTransactionLink(transaction.hash))
                     const txFound = await mongoose.Transaction.findOne({hash: transaction.hash});
                     if (txFound) {
                         continue;
