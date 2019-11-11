@@ -17,7 +17,7 @@ try {
 module.exports = {
 	apps : [{
 		name: `${pkginfo.name}-bot`,
-		script: `${__dirname}/server/bot/bot.js`,
+		script: `${__dirname}/server/bot.js`,
 		node_args: '--preserve-symlinks -r esm',
 		env: {
 			NODE_ENV: 'production',
@@ -26,22 +26,6 @@ module.exports = {
 		},
 		output: 'logs/bot.log',
 		error: 'logs/bot-error.log',
-		//log_date_format,
-		//combine_logs,
-		//error_file: `${__dirname}/logs/server.err.log`,
-		//out_file:   `${__dirname}/logs/server.out.log`,
-		//pid_file:   `${__dirname}/logs/server.pid`,
-	},{
-		name: `${pkginfo.name}-cron`,
-		script: `${__dirname}/server/cron/cron-start.js`,
-		node_args: '--preserve-symlinks -r esm',
-		env: {
-			NODE_ENV: 'production',
-			SOURCE_MAP: 'source-map',
-			//DEBUG: '*',
-		},
-		output: 'logs/cron.log',
-		error: 'logs/cron-error.log',
 		//log_date_format,
 		//combine_logs,
 		//error_file: `${__dirname}/logs/server.err.log`,
