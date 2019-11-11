@@ -15,7 +15,7 @@ export default {
         const menu = [];
         for (const l of lotteries.filter(l => Configurator.getNetworks().map(n => n.key).indexOf(l.network) > -1)) {
             const App = new Configurator(l.network);
-            menu.push([{text: App.network.coin + ' - ' + App.network.name, callback_data: 'lottery@info#' + l.id}]);
+            menu.push([{text: l.balance.toFixed(App.network.toFixed) +' '+ App.network.coin + ' - ' + App.network.name, callback_data: 'lottery@info#' + l.id}]);
         }
         menu.push([{text: t('Back'), callback_data: 'home@start'}]);
         return {message, menu}
