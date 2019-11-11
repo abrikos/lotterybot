@@ -1,4 +1,4 @@
-console.log(process.env);
+console.log(process.env.NODE_PATH);
 /*
 import BotProcess from 'server/lib/bot-process';
 import CronProcess from 'server/lib/cron-process';
