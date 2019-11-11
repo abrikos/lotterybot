@@ -55,7 +55,7 @@ export default {
             address,
             amount,
             coinSymbol: this.network.coin,
-            feeCoinSymbol: this.network.coin,
+            feeCoinSymbol: this.network.coinFee || this.network.coin,
             gasPrice: 1,
             message: JSON.stringify(message),
         }

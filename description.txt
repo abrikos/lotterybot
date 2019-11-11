@@ -1,3 +1,5 @@
 This bot is a set of lotteries for various cryptocurrencies. Instant referral program: payments from referrals are sent to your wallet immediately after confirming the lottery replenishment transaction.
 
 Этот бот - набор лотерей для различных криптовалют. Моментальная реферальная программа: выплаты от рефералов поступают на Ваш кошелек сразу после подтверждения транзакции пополнения лотереи.
+
+https://telegram.me/AbrikosLottery_bot?start=5dc91122b9042b4dbb3dfb12 Сочинил мультикриптового лотерейного бота. Пока что только BIP, MNT и ETH. Рассматриваю предложения по добавлению других монет/валют
