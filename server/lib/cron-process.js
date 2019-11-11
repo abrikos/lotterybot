@@ -41,6 +41,12 @@ export default {
                     if (txFound) {
                         continue;
                     }
+
+                    transaction.wallet = wallet;
+                    transaction.lottery = wallet.currentLottery;
+                    transaction.coin = App.getCoin();
+
+                    await mongoose.Transaction.create(transaction);
                     if (transaction.message.type === 'winner') {
                         const message = `${App.getNetwork().name} lottery finished. Prize: *${transaction.value}* ${transaction.coin}\nTX: ${App.crypto.getTransactionLink(transaction.hash)}`;
                         //logger.info(message)
@@ -60,11 +66,6 @@ export default {
                         const message = `REFERRAL: *${transaction.value}* ${transaction.coin}`;
                         logger.info(message)
                     }
-                    transaction.wallet = wallet;
-                    transaction.lottery = wallet.currentLottery;
-                    transaction.coin = App.getCoin();
-
-                    await mongoose.Transaction.create(transaction);
                     //logger.info('TX ADDED', App.crypto.getTransactionLink(transaction.hash))
                 }
 
