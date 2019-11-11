@@ -26,7 +26,8 @@ export default {
         const App = new Configurator(lottery.network);
         let message = `${App.lotteryInfo(lottery)}\n`;
         if (args.user) {
-            const userWallet = args.user.wallets.find(w => w.network === lottery.network);
+            let userWallet = args.user.wallets.find(w => w.network === lottery.network);
+            if(!userWallet) userWallet = await App.createWallet(args.user);
             message += `\n${t('To participate in the lottery, send any amount to the address')} \`${userWallet.address}\`\n`
             message += `${t('Your current chances')} *: ${(userWallet.getBalance(lottery._id) / (lottery.balance || 1) * 100).toFixed(0)}%*\n--------------------\n\n`
         }
