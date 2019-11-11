@@ -1,7 +1,6 @@
 import config from 'server/config';
 import MinterWallet from "server/lib/networks/Minter";
 import Ethereum from "server/lib/networks/Ethereum";
-
 const t = require("server/i18n");
 const logger = require('logat');
 const mongoose = require('./mongoose');
@@ -82,7 +81,7 @@ export class Configurator {
     }
 
     static getBotName() {
-        return proccess.env.BOT_NAME;
+        return process.env.BOT_NAME;
     }
 
     async lotteryFinish(lottery) {
