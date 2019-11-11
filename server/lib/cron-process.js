@@ -36,10 +36,8 @@ export default {
                 .populate(mongoose.Wallet.population);
             for (const wallet of wallets) {
                 const App = new Configurator(wallet.network);
-                if(wallet.network==='minter-mnt') logger.info('Wallet', App.crypto.getAddressLink(wallet.address))
                 const transactions = await App.crypto.loadTransactions(wallet.address);
                 for (const transaction of transactions) {
-                    logger.info('TX check', App.crypto.getTransactionLink(transaction.hash))
                     const txFound = await mongoose.Transaction.findOne({hash: transaction.hash});
                     if (txFound) {
                         continue;
@@ -68,7 +66,7 @@ export default {
                     transaction.coin = App.getCoin();
 
                     await mongoose.Transaction.create(transaction);
-                    logger.info('TX ADDED', App.crypto.getTransactionLink(transaction.hash))
+                    //logger.info('TX ADDED', App.crypto.getTransactionLink(transaction.hash))
                 }
 
             }
