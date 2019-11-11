@@ -1,6 +1,4 @@
 import React from 'react';
-import {inject, observer} from 'mobx-react';
-import {observable} from "mobx";
 import {
     Collapse,
     DropdownItem,
@@ -14,16 +12,13 @@ import {
     UncontrolledDropdown,
 } from "reactstrap";
 import {Link, withRouter} from "react-router-dom";
-import {t, changeLanguage} from "../Translator";
-import logo from '../images/logo.svg'
-import Loader from "./Loader";
+import {t, changeLanguage} from "client/Translator";
+import logo from 'client/images/logo.svg'
+import API from "client/API";
 
 
-@withRouter @inject('store') @observer
+@withRouter
 class TopMenu extends React.Component {
-    @observable address = '';
-    @observable balance = 0;
-    @observable menuPulled = false;
 
     constructor(props) {
         super(props);
@@ -31,10 +26,10 @@ class TopMenu extends React.Component {
         this.state = {
             collapsed: true
         };
-        document.title = this.props.store.config.appName;
+        document.title = 'Test Application';
     }
 
-    langSwitch = lng=>{
+    langSwitch = lng => {
         //this.props.app.changeLanguage(lng);
         changeLanguage(lng)
     };
@@ -51,15 +46,15 @@ class TopMenu extends React.Component {
     dropDownItem = (item) => {
         //const active =  !!this.props.location.pathname.match(item.path);
         const active = this.props.location.pathname === item.path;
-        return  <DropdownItem key={'nav-' + item.path} active={active} onClick={e=>this.props.history.push(item.path)}>
-                {item.label}
-            </DropdownItem>
+        return <DropdownItem key={'nav-' + item.path} active={active} onClick={e => this.props.history.push(item.path)}>
+            {item.label}
+        </DropdownItem>
     };
 
     render() {
 
         const menuItems = {
-            'Cabinet':[
+            'Cabinet': [
                 {path: '/cabinet', label: t('Cabinet'), show: true},
                 {path: '/cabinet/parameters', label: t('Parameters'), show: true},
                 {path: '/cabinet/referral', label: t('Referrals'), show: true},
@@ -67,29 +62,15 @@ class TopMenu extends React.Component {
         };
         return (
             <Navbar color="dark" dark expand="md">
-                <NavbarBrand href='#' onClick={e => this.props.history.push('/')} className='mr-auto'><img src={logo} alt={'logo'}/> {this.props.store.config.appName}</NavbarBrand>
-                <NavbarToggler onClick={e=>this.menuPulled = !this.menuPulled} />
+                <NavbarBrand href='#' onClick={e => this.props.history.push('/')} className='mr-auto'><img src={logo} alt={'logo'}/> HOME</NavbarBrand>
+                <NavbarToggler onClick={e => this.menuPulled = !this.menuPulled}/>
                 <Collapse isOpen={this.menuPulled} navbar>
                     <Nav className="ml-auto" navbar>
-                        <NavItem>{this.props.store.isLoading && <Loader/>}</NavItem>
                         {this.navItem({path: '/', label: t('Home'), show: true})}
                         {this.navItem({path: '/contacts', label: t('Contacts'), show: true})}
-
-
-
-                        {this.props.store.isAuthenticated && Object.keys(menuItems).map((menu,i) => <UncontrolledDropdown nav inNavbar key={i}>
-                            <DropdownToggle nav caret>
-                                {t(menu)}
-                            </DropdownToggle>
-                            <DropdownMenu>{menuItems[menu].map(this.dropDownItem)}</DropdownMenu>
-                        </UncontrolledDropdown>)}
-
-                        {!this.props.store.isAuthenticated && this.navItem({path: '/login', label: t('Log in'), show: true})}
-                        {this.props.store.isAuthenticated ? this.navItem({path: '/logout', label: t('Log out'), show: true})
-                            :
-                            this.navItem({path: '/registration', label: t('Registration'), show: true})}
-
-
+                        {this.navItem({path: '/login', label: t('Login'), show: !this.props.auth})}
+                        {this.navItem({path: '/cabinet', label: t('Cabinet'), show: this.props.auth})}
+                        {this.navItem({path: '/logout', label: t('Logout'), show: this.props.auth})}
 
 
                         <UncontrolledDropdown nav inNavbar>

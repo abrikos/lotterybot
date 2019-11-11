@@ -1,27 +1,19 @@
-import React, {Component} from 'react';
-import {inject, observer} from "mobx-react";
-//import AddButton from "../components/AddButton";
+import React from "react";
+import Clock from "client/components/clock";
+import {Button} from "reactstrap";
 
-export default @inject('store') @observer
-class Home extends Component {
+export default class Home extends React.Component {
 
-    constructor(props) {
+    constructor(props){
         super(props)
-        this.init()
+        this.alert = this.props.alert
     }
-
-    init = async () => {
-        const response = await this.props.store.postData(`/area/last`);
-        if (response.error) return;
-        const cards = await this.props.store.postData(`/card/all`);
-    };
-
-
 
     render() {
-        return <div></div>
-
+        return <div>
+            HOMe
+            <Clock/>
+            <Button onClick={()=>this.props.onAlert({message:'zzzzzzzzzz', isOpen:true})}>Alert</Button>
+        </div>
     }
 }
-
-

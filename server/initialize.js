@@ -8,7 +8,7 @@ async function init() {
     for (const network of Configurator.getKeys()) {
         const App = new Configurator(network);
         const l = await mongoose.Lottery.findOne({finisTime: 0, network});
-        //if (!l) await App.lotteryCreate();
+        //if (!l) await Application.lotteryCreate();
 
         const users = await mongoose.User.find().populate('wallets')
 

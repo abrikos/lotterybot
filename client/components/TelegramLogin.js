@@ -1,22 +1,35 @@
 import React, {Component} from 'react';
-import {inject} from "mobx-react";
 import {t} from "../Translator";
 import TelegramLoginButton from "react-telegram-login";
-import hostConfig from "client/lib/host.config.local";
 import {withRouter} from "react-router";
+import API from "client/API";
+import {Button} from "reactstrap";
 
-export default @inject('store') @withRouter
+export default @withRouter
 class TelegramLogin extends Component {
+    constructor(props){
+        super(props);
+        this.state = {};
+        this.init()
+    }
+
+    async init(){
+        this.setState(await API.postData('/bot-name'))
+        const response = await API.postData('/cabinet/user');
+        console.log(response)
+    }
+
     handleTelegramResponse = async response => {
-        console.log(response);
-        const res = await this.props.store.postData('/login/telegram', response);
+        const res = await API.postData('/login/telegram', response);
+        console.log(res);
         if(res.error) return;
-        this.props.history.push(this.props.store.returnUrl || '/cabinet', {authenticated: true})
+        this.props.history.push(API.returnUrl || '/cabinet', {authenticated: true})
     };
 
     render() {
         return <div>
-            {t('Login with Telegram')}*: <TelegramLoginButton dataOnauth={this.handleTelegramResponse} buttonSize={'small'} botName={hostConfig.botName || "MinterEarthBot"} />
+            <Button onClick={()=>this.handleTelegramResponse()}>Test</Button>
+            {t('Login with Telegram')}*: <TelegramLoginButton dataOnauth={this.handleTelegramResponse} buttonSize={'small'} botName={this.state.botName} />
             <hr/>
             <small>*{t('If the telegram login button is not visible, then you need to use a proxy')}</small>
         </div>

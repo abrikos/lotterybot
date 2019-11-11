@@ -1,57 +1,13 @@
-import config from "./lib/config";
 import {Component} from "react";
-import {observer} from "mobx-react";
-import {observable} from "mobx";
 import axios from "axios";
 
-const hostConfig = require("client/lib/host.config.local")
 
-@observer
-class AppStore extends Component {
-    @observable isAuthenticated = false;
-    @observable returnUrl;
-    @observable alert = {isOpen: false};
-    @observable noUserAddressAlert = {isOpen: false};
-    @observable timer;
-    @observable serverIsOffline;
-    @observable serverOnline;
-    @observable isLoading;
+class API {
 
-
-    config = config;
-    network = config[hostConfig.net];
-    coin = this.network.symbol;
-
-
-    init = async (state) => {
-        clearInterval(this.timer);
-        const ping = await this.postData('/status');
-        this.serverOnline = !ping.error;
+    isAuth = async () => {
         const auth = await this.postData('/isAuth');
-        this.isAuthenticated = auth.authenticated;
-        console.log('Store init');
+        return auth.authenticated;
     };
-
-    setTimer = (component, method) => {
-
-        this.timer = setInterval(() => this.componentInit(component, method), 1000);
-    };
-
-    componentInit = (component, method) => {
-        const reload = component.reloadSeconds || 10;
-        if (!component.seconds) component.seconds = 0;
-        if ((component.seconds / reload) - Math.ceil(component.seconds / reload) !== 0) {
-            component.seconds--;
-            return;
-        } else {
-            component.seconds--;
-        }
-        component[method || 'init']();
-    };
-
-    notification(data) {
-
-    }
 
     getCookie(name) {
         const pattern = "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)";
@@ -135,5 +91,5 @@ class AppStore extends Component {
 
 }
 
-//window.APP_STORE = new AppStore();
-export default new AppStore();
+//window.APP_STORE = new API();
+export default new API();

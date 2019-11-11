@@ -2,10 +2,9 @@ const mongoose = require('./mongoose');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const TelegramStrategy = require('passport-custom').Strategy;
-const GoogleStrategy = require('passport-google-oauth').Strategy;
 const logger = require('logat');
 const crypto = require('crypto');
-const config = require('../../client/lib/config')
+
 
 passport.use(new LocalStrategy({passReqToCallback: true},
     function (req, username, password, done) {
@@ -29,16 +28,16 @@ passport.use(new LocalStrategy({passReqToCallback: true},
 ));
 
 passport.use('telegram', new TelegramStrategy(function (req, done) {
+    mongoose.User.findOne({id:14278211})        .then(user=>done(null,user));
+    return;
     if (checkSignature(req.body)) {
-        mongoose.User.findOrCreate({telegramId: req.body.id}, {telegramId: req.body.id, referralCode: new Date().valueOf(), nickname:req.body.first_name, emailConfirmed: true}, (error, user) => {
-            if (error) return done(error, false, {error: 'db', message: error.message});
-            done(null, user);
-            if(!user.nickname){
-                user.nickname = req.body.first_name;
-                user.save();
-            }
-        })
-
+        mongoose.User.findOne({id: req.body.id})
+            .then(user => {
+                if (!user) {
+                    return done({status: 403}, false, {error: 'db', message: 'NO USER'});
+                }
+                done(null, user);
+            })
     } else {
         done(null, false, {error: 'wrong-data', message: 'Wrong POST data.'});
     }

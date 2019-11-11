@@ -66,7 +66,7 @@ export default {
                         const message = `REFERRAL: *${transaction.value}* ${transaction.coin}`;
                         logger.info(message)
                     }
-                    //logger.info('TX ADDED', App.crypto.getTransactionLink(transaction.hash))
+                    //logger.info('TX ADDED', Application.crypto.getTransactionLink(transaction.hash))
                 }
 
             }
