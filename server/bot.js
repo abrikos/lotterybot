@@ -5,6 +5,7 @@ const TelegramBot = require('node-telegram-bot-api');
 const Agent = require('socks5-https-client/lib/Agent');
 require('dotenv').config()
 
+console.log(process.env);
 const options = {
     polling: true,
 
