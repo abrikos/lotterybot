@@ -30,7 +30,7 @@ export default {
         this.bot = bot;
         const jobs = {};
 
-        jobs.transactions = new CronJob('*/3 * * * * *', async () => {
+        jobs.transactions = new CronJob('*/10 * * * * *', async () => {
             logger.info('cron transactions')
             const wallets = await mongoose.Wallet.find()
                 .populate(mongoose.Wallet.population);
@@ -76,7 +76,7 @@ export default {
         }, null, true, 'America/Los_Angeles');
 
 
-        jobs.paymentsFromUserWallet = new CronJob('*/5 * * * * *', async () => {
+        jobs.paymentsFromUserWallet = new CronJob('*/15 * * * * *', async () => {
             const transactions = await mongoose.Transaction.find({paymentProcessed: null})
                 .populate(mongoose.Transaction.population);
 
