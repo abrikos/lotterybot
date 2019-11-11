@@ -37,6 +37,7 @@ export default {
                 const App = new Configurator(wallet.network);
                 const transactions = await App.crypto.loadTransactions(wallet.address);
                 for (const transaction of transactions) {
+                    logger.info(transaction.hash)
                     const txFound = await mongoose.Transaction.findOne({hash: transaction.hash});
                     if (txFound) {
                         continue;
