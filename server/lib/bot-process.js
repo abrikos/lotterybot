@@ -50,7 +50,7 @@ paymentaddresses - List of your addresses for participating in each of the activ
 
         bot.onText(/\/start(.*)/, async (msg, match) => {
             const user = await this.App.getUser(msg.from);
-            i18n.setLocale(user.language_code);
+            if(user.language_code) i18n.setLocale(user.language_code);
             if (mongoose.Types.ObjectId.isValid(match[1].trim()) && !user.parent) {
                 user.parent = await mongoose.User.findById(match[1].trim());
                 await user.save();
