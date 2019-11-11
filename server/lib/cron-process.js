@@ -63,7 +63,9 @@ export default {
                     transaction.wallet = wallet;
                     transaction.lottery = wallet.currentLottery;
                     transaction.coin = App.getCoin();
+
                     await mongoose.Transaction.create(transaction);
+                    logger.info('TX ADDED', App.crypto.getTransactionLink(transaction.hash))
                 }
 
             }

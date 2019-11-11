@@ -108,7 +108,7 @@ paymentaddresses - List of your addresses for participating in each of the activ
 
         bot.on('callback_query', async (callbackQuery) => {
             const user = await this.App.getUser(callbackQuery.from);
-            i18n.setLocale(user.language_code);
+            if(user.language_code) i18n.setLocale(user.language_code);
             const msg = callbackQuery.message;
             const response = await Callback.process(callbackQuery.data, user);
             if(response.error) return logger.error(response.error);
