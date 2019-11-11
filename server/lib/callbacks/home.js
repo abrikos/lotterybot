@@ -50,7 +50,7 @@ export default {
 
         const menu = [
             [
-                {text: t('Main menu'), callback_data: 'home@start'},
+                {text: t('Back'), callback_data: 'home@start'},
 
             ]
         ];
