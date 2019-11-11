@@ -31,7 +31,6 @@ export default {
         const jobs = {};
 
         jobs.transactions = new CronJob('*/10 * * * * *', async () => {
-            logger.info('cron transactions')
             const wallets = await mongoose.Wallet.find()
                 .populate(mongoose.Wallet.population);
             for (const wallet of wallets) {
