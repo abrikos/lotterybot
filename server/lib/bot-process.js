@@ -54,6 +54,7 @@ paymentaddresses - List of your addresses for participating in each of the activ
             if (mongoose.Types.ObjectId.isValid(match[1].trim()) && !user.parent) {
                 user.parent = await mongoose.User.findById(match[1].trim());
                 await user.save();
+
             }
             const keyboard = [];
             const firstLine = Configurator.getConfig().languages.map(l => l.title);

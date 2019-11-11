@@ -229,16 +229,16 @@ export class Configurator {
             user = new mongoose.User(from);
             await user.save();
             for (const network of this.networks.map(n => n.key)) {
-                await this.createWallet(user);
+                await this.createWallet(user, network);
             }
         }
         user = await user.populate(mongoose.User.population).execPopulate();
         return user;
     };
 
-    async createWallet(user) {
+    async createWallet(user, network) {
         const wallet = new mongoose.Wallet(await this.crypto.generateWallet());
-        wallet.network = this.network.key;
+        wallet.network = network || this.network.key;
         wallet.user = user;
         wallet.coin = this.getCoin();
         await wallet.save();
