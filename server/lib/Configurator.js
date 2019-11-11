@@ -259,6 +259,7 @@ export class Configurator {
         }
         user.waitForReferralAddress = null;
         user.save();
+        return {};
     };
 
 

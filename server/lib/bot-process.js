@@ -72,12 +72,13 @@ paymentaddresses - List of your addresses for participating in each of the activ
             const sendToId = msg.from.id;
 
             if (user.waitForReferralAddress) {
-                const result = this.App.setReferralAddress(user, msg.text)
+                const App = new Configurator(user.waitForReferralAddress)
+                const result = App.setReferralAddress(user, msg.text)
                 if (!result.error) {
                     const response = await Callback.process('cabinet@start', user);
-                    bot.sendMessage(sendToId, t('New address set for') + ` ${result.network.name}: *${msg.text}*`, response.menu);
+                    bot.sendMessage(sendToId, t('New address set for') + ` ${App.network.name}: *${msg.text}*`, response.menu);
                 } else {
-                    const response = await Callback.process('cabinet@errorSetAddress#'+result.network.name, user);
+                    const response = await Callback.process('cabinet@errorSetAddress#'+App.network.name, user);
                     bot.sendMessage(sendToId, response.message, response.menu);
                 }
 
