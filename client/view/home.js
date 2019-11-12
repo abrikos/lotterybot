@@ -1,19 +1,35 @@
-import React from "react";
-import Clock from "client/components/clock";
+import React, {Component, useEffect, useState} from 'react';
+import {t} from "client/Translator";
 import {Button} from "reactstrap";
+import {Link} from "react-router-dom";
+const ReactBsTable = require( "react-bootstrap-table")
+const BootstrapTable = ReactBsTable.BootstrapTable;
+const TableHeaderColumn = ReactBsTable.TableHeaderColumn;
 
-export default class Home extends React.Component {
+export default (props) => {
+    const [lotteries, setLotteries] = useState([]);
 
-    constructor(props){
-        super(props)
-        this.alert = this.props.alert
+    //props.apiData('/lotteries')        .then(res=>setLotteries(res));
+    useEffect(()=>{
+        props.apiData('/lotteries')        .then(setLotteries);
+    }, [])
+
+    function cellFormat(cell, row){
+        return <a href={'#'} onClick={()=>props.history.push('/lottery/'+row.id)}>{cell}</a>
     }
 
-    render() {
-        return <div>
-            HOMe
-            <Clock/>
-            <Button onClick={()=>this.props.onAlert({message:'zzzzzzzzzz', isOpen:true})}>Alert</Button>
-        </div>
-    }
+    return <div>
+        <h1>{t('Active lotteries')}</h1>
+        <Link to={'/lottery/zzzzz'}>ERRR</Link>
+        <BootstrapTable data={lotteries} striped hover version='4'>
+            <TableHeaderColumn isKey dataField='network' width={'20%'} dataFormat={cellFormat}>{t('Network')}</TableHeaderColumn>
+            <TableHeaderColumn dataField='coin' width={'10%'}>{t('Coin')}</TableHeaderColumn>
+            <TableHeaderColumn dataField='balance' width={'20%'}>{t('Balance')}</TableHeaderColumn>
+            <TableHeaderColumn dataField='stopLimit' width={'20%'}>{t('Limit')}</TableHeaderColumn>
+            <TableHeaderColumn dataField='date' width={'30%'}>{t('Started')}</TableHeaderColumn>
+        </BootstrapTable>
+    </div>
+
 }
+
+

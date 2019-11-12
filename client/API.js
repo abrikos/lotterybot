@@ -55,22 +55,15 @@ class API {
         this.isLoading = true;
         try {
             const res = await axios.post(url, data);
-            this.isLoading = false;
             if (res.data.error) {
                 console.warn('WARN', res.data, path);
-                this.alert = {isOpen: true, path, color: "warning", ...res.data};
-                if (res.data.error)
-                    return {error: res.data.error}
             }
-            this.alert = {isOpen: false};
-            //const stop = new Date().valueOf();
-            //console.log(path, stop - start);
             return res.data;
 
         } catch (e) {
 
             if (!e.response){
-                this.alert = {isOpen: true, path, color: "danger",  message: e.toJSON().message};
+
                 return {error: 500, message: e.toJSON().message}
             }
             switch (e.response.status) {
@@ -81,10 +74,8 @@ class API {
                     this.serverOnline = false;
                     break;
                 default:
-                    this.alert = {isOpen: true, error: e.response.status, message: e.response.statusText, color: "danger", path};
             }
-            this.isLoading = false;
-            return {error: e.response.status}
+            return {error: e.response.status, message:e.response.statusText}
         }
 
     }

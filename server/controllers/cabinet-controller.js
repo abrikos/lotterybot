@@ -1,4 +1,6 @@
 import {CB} from "server/lib/CB";
+import {Configurator} from "server/lib/Configurator";
+
 const i18n = require("i18n");
 const passportLib = require('../lib/passport');
 const mongoose = require("../lib/mongoose");
@@ -10,35 +12,63 @@ const to = require('../lib/to');
 module.exports.controller = function (app) {
     const Callback = new CB();
 
+    async function getUser(req) {
+        const user =await mongoose.User.findOne({id: req.session.passport.user.id})
+            .populate([
+                {path:'wallets', select:'address'},
+                'referrals'
+                ])
+        i18n.setLocale(user.language_code);
+        return user
+    }
 
-    app.post('/api/cabinet/language', async (req, res) => {
-        return res.send({code: req.session.passport ? req.session.passport.user.language_code : 'en'})
+    app.post('/api/language', (req, res) => {
+        if (!req.session.passport) return res.send({code: 'en'});
+        getUser(req)
+            .then(user => res.send({code: user.language_code}))
     });
 
-    app.post('/api/cabinet/referral-link', passportLib.isLogged, async (req, res) => {
-        i18n.setLocale(req.session.passport.user.language_code);
-        const response = await Callback.process('cabinet@reflink', req.session.passport.user);
-        if(response.error) return res.send({error:500, message:response.error});
-        res.send(response)
+    app.post('/api/cabinet/referral-link', passportLib.isLogged, (req, res) => {
+        getUser(req)
+            .then(user => {
+                Callback.process('cabinet@reflink', user)
+                    .then(response => {
+                        if (response.error) return res.send({error: 500, message: response.error});
+                        res.send(response)
+                    })
+            })
+    });
+
+    app.post('/api/cabinet/referral-addresses', passportLib.isLogged, (req, res) => {
+        getUser(req)
+            .then(user => {
+                const addresses = [];
+                for(const network of Configurator.getKeys()){
+                    const App = new Configurator(network)
+                    addresses.push({network, coin: App.network.coin, name: App.network.name, address:user.addresses.find(a=>a.network===network)})
+                }
+                res.send(addresses)
+
+            })
     });
 
     app.post('/api/cabinet/referrals', passportLib.isLogged, async (req, res) => {
-        const [error, referrals] = await to(mongoose.Referral.find({to: req.session.passport.user}).populate('from', mongoose.User.fieldsAllowed).sort({date: -1}))
-        if (error) return res.send(error);
-        /*for (const referral of referrals) {
+        getUser(req)
+            .then(user => {
 
-            const [err2, tx] = await to(mongoose.Transaction.findOne({hash: referral.tx}));
+                Callback.process('cabinet@referrals', user)
+                    .then(response => {
+                        if (response.error) return res.send({error: 500, message: response.error});
+                        res.send(response)
+                    })
+            })
 
-            referral.amount = tx.amountToMain;
-        }*/
-
-        res.send(referrals)
     });
 
     app.post('/api/cabinet/user', passportLib.isLogged, (req, res) => {
         mongoose.User.findById(req.session.passport.user._id)
-            .populate({path:'referral', select: mongoose.User.fieldsAllowed.join(' ')})
-            .select(mongoose.User.fieldsAllowed.join(' ')+' username')
+            .populate({path: 'referral', select: mongoose.User.fieldsAllowed.join(' ')})
+            .select(mongoose.User.fieldsAllowed.join(' ') + ' username')
             .then(user => {
                 if (!user) return res.sendStatus(400)
                 logger.info(user)
