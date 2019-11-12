@@ -9,9 +9,6 @@ export default (props) => {
         return <div/>
     }
 
-    props.api.postData('/bot-name')
-        .then(res=>setBotName(res.botName))
-
     const [botName, setBotName] = useState();
 
     const handleTelegramResponse = async response => {
@@ -23,7 +20,6 @@ export default (props) => {
 
 
     return <div>
-        {botName}
         <div className={'d-flex justify-content-center'}>
             <div className={'card'}>
                 <div className={'card-header'}>{t('Log in')}</div>

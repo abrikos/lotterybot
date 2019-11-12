@@ -1,13 +1,25 @@
+import {CB} from "server/lib/CB";
+const i18n = require("i18n");
 const passportLib = require('../lib/passport');
 const mongoose = require("../lib/mongoose");
 const logger = require('logat');
 const Minter = require('server/lib/networks/Minter');
 const to = require('../lib/to');
-const qr = require('qr-image');
+
 
 module.exports.controller = function (app) {
-    app.post('/api/cabinet/address/check', passportLib.isLogged, async (req, res) => {
-        res.send({valid: Minter.checkAddress(req.body.address)})
+    const Callback = new CB();
+
+
+    app.post('/api/cabinet/language', async (req, res) => {
+        return res.send({code: req.session.passport ? req.session.passport.user.language_code : 'en'})
+    });
+
+    app.post('/api/cabinet/referral-link', passportLib.isLogged, async (req, res) => {
+        i18n.setLocale(req.session.passport.user.language_code);
+        const response = await Callback.process('cabinet@reflink', req.session.passport.user);
+        if(response.error) return res.send({error:500, message:response.error});
+        res.send(response)
     });
 
     app.post('/api/cabinet/referrals', passportLib.isLogged, async (req, res) => {
@@ -21,11 +33,6 @@ module.exports.controller = function (app) {
         }*/
 
         res.send(referrals)
-    });
-
-    app.get('/qr/:address', passportLib.isLogged, (req, res) => {
-        res.set('Content-type', 'image/png')
-        res.send(qr.imageSync(req.params.address, {size:10}))
     });
 
     app.post('/api/cabinet/user', passportLib.isLogged, (req, res) => {

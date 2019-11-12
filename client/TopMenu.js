@@ -73,7 +73,7 @@ class TopMenu extends React.Component {
                         {this.navItem({path: '/logout', label: t('Logout'), show: this.props.auth})}
 
 
-                        <UncontrolledDropdown nav inNavbar>
+                        {/*<UncontrolledDropdown nav inNavbar>
                             <DropdownToggle nav caret>
                                 {t('Language')}
                             </DropdownToggle>
@@ -86,7 +86,7 @@ class TopMenu extends React.Component {
                                 </DropdownItem>
 
                             </DropdownMenu>
-                        </UncontrolledDropdown>
+                        </UncontrolledDropdown>*/}
 
                     </Nav>
                 </Collapse>

@@ -1,5 +1,4 @@
-import * as CallBacks from "server/lib/bot/callbacks"
-import {CB} from "server/lib/Callback"
+import {CB} from "server/lib/CB"
 import {Configurator} from "server/lib/Configurator"
 import logger from "logat";
 

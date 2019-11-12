@@ -8,6 +8,7 @@ import Login from "client/view/login";
 import Logout from "client/view/logout";
 import Cabinet from "client/view/cabinet";
 import Denied from "client/view/denied";
+import i18n from './i18n';
 
 export default class Application extends Component {
 
@@ -15,7 +16,14 @@ export default class Application extends Component {
         super(props);
         this.history = props.history || createHistory(this.props);
         this.state = {auth: true};
-        this.checkAuth()
+        this.checkAuth();
+        this.setLanguage()
+    }
+
+    setLanguage = ()=>{
+        this.props.api.postData('/cabinet/language')
+            .then(res=>i18n.changeLanguage(res.code))
+
     }
 
     checkAuth = async () => {
