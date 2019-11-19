@@ -4,6 +4,7 @@ import {Button} from "reactstrap";
 import NotFound from "client/view/notfound";
 import Loader from "client/components/Loader";
 import markdown from 'markdown'
+import moment from "moment";
 
 const ReactBsTable = require("react-bootstrap-table")
 const BootstrapTable = ReactBsTable.BootstrapTable;
@@ -24,18 +25,18 @@ const Lottery = (props) => {
     }, [])
 
 
+
     return loading ? <Loader/> : lottery.address ? <div>
         <h1>{t('Lottery')} {lottery.name}</h1>
 
         {props.toHtml(lottery.info)}
-        {lottery.transactions.map(tx => <div key={tx.hash}>{tx.hash}</div>)}
-        {/*<BootstrapTable data={lotteries} striped hover version='4'>
-            <TableHeaderColumn isKey dataField='network' width={'20%'} dataFormat={cellFormat}>{t('Network')}</TableHeaderColumn>
+
+        <BootstrapTable data={lottery.transactions} striped hover version='4'>
+            <TableHeaderColumn isKey dataField='hash' width={'60%'}>{t('TX')}</TableHeaderColumn>
+            <TableHeaderColumn dataField='value' width={'20%'}>{t('Value')}</TableHeaderColumn>
             <TableHeaderColumn dataField='coin' width={'10%'}>{t('Coin')}</TableHeaderColumn>
-            <TableHeaderColumn dataField='balance' width={'20%'}>{t('Balance')}</TableHeaderColumn>
-            <TableHeaderColumn dataField='stopLimit' width={'20%'}>{t('Limit')}</TableHeaderColumn>
-            <TableHeaderColumn dataField='date' width={'30%'}>{t('Started')}</TableHeaderColumn>
-        </BootstrapTable>*/}
+            <TableHeaderColumn dataField='timestamp' dataFormat={v=>moment(v*1000).format('YYYY-MM-DD HH:mm')} width={'20%'}>{t('Date')}</TableHeaderColumn>
+        </BootstrapTable>
     </div> : <NotFound/>
 
 };

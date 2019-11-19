@@ -23,7 +23,7 @@ module.exports.controller = function (app) {
     }
 
     app.post('/api/language', (req, res) => {
-        if (!req.session.passport) return res.send({code: 'en'});
+        if (!(req.session && req.session.passport)) return res.send({code: 'en'});
         getUser(req)
             .then(user => res.send({code: user.language_code}))
     });

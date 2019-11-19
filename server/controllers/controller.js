@@ -32,15 +32,16 @@ module.exports.controller = function (app) {
 
     app.post('/api/lottery/:id', async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.send({error: 500, message: 'Wrong ID'});
-        if(req.session){
-            const user = await mongoose.User.findOne({id:req.session.passport.user.id});
+        let user;
+        if(req.session && req.session.passport){
+            user = await mongoose.User.findOne({id:req.session.passport.user.id}).populate([{path:'wallets', populate:'transactionsIn'}]);
             i18n.setLocale(user.language_code);
         }
         mongoose.Lottery.findById(req.params.id).populate(lotteryPopulate)
             .then(lottery => {
                 if (!lottery) res.send({error: 404, message: 'NO lotteries found'});
                 const App = new Configurator(lottery.network);
-                Callback.process('lottery@info#' + lottery.id)
+                Callback.process('lottery@info#' + lottery.id, user)
                     .then(info =>
                         res.send({
                             name: App.network.name,
