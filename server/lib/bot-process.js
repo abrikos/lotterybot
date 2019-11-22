@@ -69,6 +69,9 @@ paymentaddresses - List of your addresses for participating in each of the activ
 
             const response = await Callback.process('cabinet@addresses', user);
             await bot.sendMessage(msg.from.id, response.message, response.menu);
+            let coins = t('Supported networks') + ':\n';
+            coins += Configurator.getConfig().networks.map(n=>n.name).join(', ');
+            await bot.sendMessage(msg.from.id, coins, langOptions);
             await bot.sendMessage(msg.from.id, t('Start main menu by choosing language'), langOptions);
         });
 

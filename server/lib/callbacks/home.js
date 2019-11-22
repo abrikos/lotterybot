@@ -31,7 +31,8 @@ export default {
                 message += net.name +'\n';
                 message += t('Coin') + ': ' + net.coin +'\n';
                 message += net.home +'\n';
-                if(net.faucet) message+= t('Faucet') +': '+ net.faucet+'\n';
+                message += t('Wallet') + ': '+  net.wallet +'\n';
+                if(net.faucet) message+= t('Get coins for free') +': '+ net.faucet+'\n';
                 message+='------------------------\n\n';
             }
         const menu = [

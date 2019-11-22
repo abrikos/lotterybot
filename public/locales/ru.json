@@ -51,5 +51,8 @@
 	"Start main menu by choosing language": "Выведите основное меню выбрав язык",
 	"List of all available commands": "Список доступных комманд",
 	"All lotteries": "Все лотереи",
-	"Usage": "Использование"
+	"Wallet": "Кошелек",
+	"Get coins for free": "Получить монеты бесплатно",
+	"Usage": "Использование",
+	"Supported networks": "Поддерживаемые сети"
 }
