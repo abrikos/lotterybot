@@ -82,7 +82,7 @@ paymentaddresses - List of your addresses for participating in each of the activ
             if(msg.text.match(/^\//)) return;
             if (msg.from.id !== msg.chat.id) return;
             const user = await this.App.getUser(msg.from);
-            i18n.setLocale(user.language_code);
+            user.language_code && i18n.setLocale(user.language_code);
             const sendToId = msg.from.id;
 
             if (user.waitForReferralAddress) {
