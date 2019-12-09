@@ -177,6 +177,7 @@ export default {
     async get(url, action, options) {
         try {
             const res = await axios.get(`${url}${action}`, options);
+            if(options) console.log(res)
             return res.data;
         } catch (error) {
             if (error.response)
