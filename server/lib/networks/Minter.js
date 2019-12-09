@@ -42,7 +42,8 @@ export default {
     },
 
     async getNonce(address) {
-        const response = await this.get(this.network.apiUrl, `address?address=${address}`);
+        const response = await this.getApi(`address?address=${address}`);
+        if(response.error) logger.error(response.error)
         return response.result.transaction_count * 1 + 1;
     },
 
@@ -165,7 +166,6 @@ export default {
 
     async getApi(action) {
         const options = {headers:{'X-Project-Id':process.env.stakeholderId, 'X-Project-Secret':process.env.stakeholderSecret}}
-        //logger.info(this.network.apiUrl + action)
         return await this.get(this.network.apiUrl, action, options)
     },
 
@@ -177,7 +177,6 @@ export default {
     async get(url, action, options) {
         try {
             const res = await axios.get(`${url}${action}`, options);
-            if(options) console.log(res)
             return res.data;
         } catch (error) {
             if (error.response)
