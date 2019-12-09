@@ -164,8 +164,9 @@ export default {
     },
 
     async getApi(action) {
+        const options = {headers:{'X-Project-Id':process.env.stakeholderId, 'X-Project-Secret':process.env.stakeholderSecret}}
         //logger.info(this.network.apiUrl + action)
-        return await this.get(this.network.apiUrl, action)
+        return await this.get(this.network.apiUrl, action, options)
     },
 
     async getExplorer(action) {
@@ -173,9 +174,9 @@ export default {
         return res.data;
     },
 
-    async get(url, action) {
+    async get(url, action, options) {
         try {
-            const res = await axios(`${url}${action}`);
+            const res = await axios(`${url}${action}`, options);
             return res.data;
         } catch (error) {
             if (error.response)

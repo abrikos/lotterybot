@@ -29,7 +29,7 @@
       "chainId": 1,
       "explorerUrl": "https://explorer.minter.network",
       "explorerApiUrl": "https://explorer-api.minter.network/api/v1",
-      "apiUrl": "https://api.minter.stakeholder.space/",
+      "apiUrl": "https://mnt.funfasy.dev/v0/",
       "centrifuge": "wss://explorer-rtm.minter.network/connection/websocket",
       "ownerAddress": "Mx389a3ec7916a7c40928ab89248524f67a834eab7"
     },
@@ -48,7 +48,7 @@
       "chainId": 2,
       "explorerUrl": "https://testnet.explorer.minter.network",
       "explorerApiUrl": "https://explorer-api.testnet.minter.network/api/v1",
-      "apiUrl": "https://api.testnet.minter.stakeholder.space/",
+      "apiUrl": "https://test.mnt.funfasy.dev/v0/",
       "centrifuge": "wss://explorer-rtm.testnet.minter.network/connection/websocket",
       "ownerAddress": "Mx389a3ec7916a7c40928ab89248524f67a834eab7"
     },
