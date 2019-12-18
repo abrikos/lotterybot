@@ -91,11 +91,7 @@ export default {
     },
 
     async getBalance(address) {
-        const [error, res] = await to(axios(`${this.network.apiUrl}/address?address=${address}`));
-        if (error) {
-            logger.error(error);
-            return error;
-        }
+        const res = await this.getApi(`/address?address=${address}`);
         return parseFloat(res.data.result.balance[this.network.coin]) / 1000000000000000000;
     },
 
